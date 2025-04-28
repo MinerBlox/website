@@ -60,8 +60,15 @@
             font-size: 1.2em;
             margin: 2px;
             min-width: 25px;
-            transition: color 0.2s ease;
-            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        #lyrics-container span.correct {
+            background-color: #28a745;
+            color: white;
+        }
+        #lyrics-container span.incorrect {
+            background-color: #dc3545;
+            color: white;
         }
         #start-button {
             padding: 12px 24px;
@@ -81,15 +88,20 @@
 </head>
 <body>
     <div id="video-container">
-        <video id="video-player" controls>
+        <video id="video-player" controls preload="auto">
             <source src="https://dl.dropboxusercontent.com/scl/fi/v6uxhdfl1dzqbtiadqlmo/youtube_XsZZQPKLChY_1920x1080_h264.mp4?rlkey=i6yrb38s9a2d1ajzqt5brx4bd&st=mpsno0gc" type="video/mp4">
             Your browser does not support the video tag.
         </video>
     </div>
     <div id="lyrics-container"></div>
+    <input type="text" id="typing-input" placeholder="Type here..." style="margin-top: 20px; padding: 10px; font-size: 1.2em; width: 80%; max-width: 600px; border: none; border-radius: 6px;" />
     <button id="start-button">Start Game</button>
     <script>
-        // --- Lyrics Game Logic ---
+        const videoPlayer = document.getElementById('video-player');
+        const lyricsContainer = document.getElementById('lyrics-container');
+        const typingInput = document.getElementById('typing-input');
+        const startButton = document.getElementById('start-button');
+
         const lyrics = [
             "Hold me close 'til I get up",
             "Time is barely on our side",
@@ -97,29 +109,67 @@
             "The storms we chase are leading us",
             "And love is all we'll ever trust, yeah"
         ];
-        let currentLineIndex = 0;
 
-        function displayLyricsLine(index) {
-            const lyricsContainer = document.getElementById('lyrics-container');
-            lyricsContainer.innerHTML = ''; // Clear any existing lyrics
-            const currentLine = lyrics[index];
-            currentLine.split('').forEach(char => {
-                const span = document.createElement('span');
+        let currentLineIndex = 0;
+        let currentLine = "";
+        let typedText = "";
+
+        function displayLyricsLine() {
+            lyricsContainer.innerHTML = ""; // Clear previous line
+            currentLine = lyrics[currentLineIndex];
+            currentLine.split("").forEach(char => {
+                const span = document.createElement("span");
                 span.textContent = char;
                 lyricsContainer.appendChild(span);
             });
         }
 
-        function startGame() {
-            const videoPlayer = document.getElementById('video-player');
-            currentLineIndex = 0;
-            displayLyricsLine(currentLineIndex);
+        function checkTyping() {
+            typedText = typingInput.value;
+            const spans = lyricsContainer.querySelectorAll("span");
+            
+            // Check each character
+            let allCorrect = true;
+            typedText.split("").forEach((char, index) => {
+                if (spans[index]) {
+                    if (char === currentLine[index]) {
+                        spans[index].classList.add("correct");
+                        spans[index].classList.remove("incorrect");
+                    } else {
+                        spans[index].classList.add("incorrect");
+                        spans[index].classList.remove("correct");
+                        allCorrect = false;
+                    }
+                }
+            });
 
-            // Play video when the game starts
-            videoPlayer.play();
+            // If all characters are correct and the length matches, move to next line
+            if (allCorrect && typedText.length === currentLine.length) {
+                currentLineIndex++;
+                typingInput.value = ""; // Clear input
+                if (currentLineIndex < lyrics.length) {
+                    displayLyricsLine(); // Display next line
+                } else {
+                    // Game finished
+                    alert("You finished typing all the lyrics!");
+                    typingInput.disabled = true;
+                }
+            }
         }
 
-        document.getElementById('start-button').addEventListener('click', startGame);
+        function startGame() {
+            currentLineIndex = 0;
+            typingInput.value = "";
+            typingInput.disabled = false;
+            displayLyricsLine();
+            videoPlayer.currentTime = 0; // Start video from the beginning
+            videoPlayer.volume = 0.1; // Set volume to 10%
+            videoPlayer.play();
+            typingInput.focus();
+        }
+
+        typingInput.addEventListener("input", checkTyping);
+        startButton.addEventListener("click", startGame);
     </script>
 </body>
 </html>
