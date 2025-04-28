@@ -128,7 +128,7 @@
     <script>
         // --- YouTube Player ---
         let player;
-        const fallbackVideoId = 'XsZZQPKLChY'; // Set to the provided YouTube video ID
+        const videoId = 'XsZZQPKLChY'; // Automatically set the video ID
         let playerReady = false;
 
         function onYouTubePlayerReady(event) {
@@ -145,7 +145,6 @@
         }
 
         window.onYouTubeIframeAPIReady = function() {
-            const videoId = fallbackVideoId; // Use the specified video ID
             player = new YT.Player('youtube-player', {
                 videoId: videoId,
                 height: '100%',
