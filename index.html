@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Type the Lyrics</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -14,20 +15,20 @@
             justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
-            background-color: #121212;
-            color: #fff;
+            background-color: #121212; /* Dark background */
+            color: #fff; /* White text */
             overflow: auto;
         }
-        #video-container {
+        #youtube-player-container {
             margin-top: 20px;
             position: relative;
             display: flex;
             justify-content: center;
             width: fit-content;
         }
-        video {
+        #youtube-player {
             border-radius: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Slightly darker shadow */
             width: 80vw;
             height: auto;
             aspect-ratio: 16 / 9;
@@ -39,8 +40,8 @@
             margin-top: 30px;
             padding: 10px;
             border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            background-color: rgba(255, 255, 255, 0.1); /* Slightly more transparent background */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Darker shadow */
             max-width: 95%;
             box-sizing: border-box;
             display: flex;
@@ -55,23 +56,33 @@
             width: 25px;
             height: 25px;
             border-radius: 4px;
-            background-color: #333;
-            color: #ddd;
+            background-color: #333; /* Darker grey background for letters */
+            color: #ddd; /* Lighter grey text */
             font-size: 1.2em;
             margin: 2px;
             min-width: 25px;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            border: 1px solid transparent;
+            transition: color 0.2s ease; /* Smooth transition for color */
+            cursor: pointer; /* Add a pointer cursor on hover */
         }
-        #lyrics-container span.correct {
-            background-color: #28a745;
-            border-color: #28a745;
-            color: white;
+        #lyrics-container span:hover {
+            background-color: #555; /* Slightly lighter on hover */
+            color: #fff;
         }
-        #lyrics-container span.incorrect {
-            background-color: #dc3545;
-            border-color: #dc3545;
-            color: white;
+        #lyrics-input {
+            display: none; /* Hide the input box */
+        }
+        #feedback {
+            margin-top: 10px;
+            font-size: 1.1em;
+            color: #aaa; /* Lighter text */
+            min-height: 1.5em;
+            text-align: center;
+        }
+        #accuracy {
+            margin-top: 5px;
+            font-size: 1em;
+            color: #aaa;
+            text-align: center;
         }
         #start-button {
             padding: 12px 24px;
@@ -87,127 +98,190 @@
         #start-button:hover {
             background-color: #0056b3;
         }
+        #game-over-overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            z-index: 4;
+            display: none;
+        }
+        #game-over-content {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #fff;
+        }
+        #game-over-content h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        #game-over-content p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        #play-again-button {
+            padding: 12px 24px;
+            font-size: 1.2em;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 10px;
+        }
+        #play-again-button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
-    <div id="video-container">
-        <video id="video-player" controls preload="auto">
-            <source src="https://dl.dropboxusercontent.com/scl/fi/v6uxhdfl1dzqbtiadqlmo/youtube_XsZZQPKLChY_1920x1080_h264.mp4?rlkey=i6yrb38s9a2d1ajzqt5brx4bd&st=mpsno0gc" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
+    <div id="youtube-player-container">
+        <div id="youtube-player"></div>
     </div>
     <div id="lyrics-container"></div>
+    <input type="text" id="lyrics-input" placeholder="Start typing the lyrics...">
+    <div id="feedback"></div>
+    <div id="accuracy">Accuracy: 0%</div>
     <button id="start-button">Start Game</button>
+    <div id="game-over-overlay">
+        <div id="game-over-content">
+            <h2>Game Over</h2>
+            <p>Your Score: <span id="final-score">0</span></p>
+            <button id="play-again-button">Play Again</button>
+        </div>
+    </div>
     <script>
-        const videoPlayer = document.getElementById('video-player');
-        const lyricsContainer = document.getElementById('lyrics-container');
-        const startButton = document.getElementById('start-button');
-
-        const lyrics = `
-            Hold me close 'til I get up
-            Time is barely on our side
-            I don't wanna waste what's left
-            The storms we chase are leading us
-            And love is all we'll ever trust, yeah
-            No, I don't wanna waste what's left
-            And on and on we'll go
-            Through the wastelands, through the highways
-            'Til my shadow turns to sun rays
-            And on and on we'll go
-            Through the wastelands, through the highways
-            And on and on we'll go
-            Oh, on we'll go
-            Finding life along the way
-            Melodies we haven't played
-            No, I don't want no rest
-            Echoin' around these walls
-            Fighting to create a song (yeah)
-            I don't wanna miss a beat
-            And on and on we'll go
-            Through the wastelands, through the highways
-            'Til my shadow turns to sun rays
-            And on and on we'll go
-            Through the wastelands, through the highways
-            And on and on we'll go
-            And we'll grow in number
-            Fueled by thunder, see the horizon
-            Turn us to thousands
-            And we'll grow in number
-            Fueled by thunder, see the horizon
-            Turn us to thousands
-            And on and on we'll go
-            Through the wastelands, through the highways
-            'Til my shadow turns to sun rays
-            And on and on we'll go
-            Through the wastelands, through the highways
-            And on and on we'll go
-        `.trim().split('\n');
+        const lyrics = [
+            "Hold me close 'til I get up",
+            "Time is barely on our side",
+            "I don't wanna waste what's left",
+            "The storms we chase are leading us",
+            "And love is all we'll ever trust, yeah",
+            "No, I don't wanna waste what's left",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "'Til my shadow turns to sun rays",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "And on and on we'll go",
+            "Oh, on we'll go",
+            "Finding life along the way",
+            "Melodies we haven't played",
+            "No, I don't want no rest",
+            "Echoin' around these walls",
+            "Fighting to create a song (yeah)",
+            "I don't wanna miss a beat",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "'Til my shadow turns to sun rays",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "And on and on we'll go",
+            "And we'll grow in number",
+            "Fueled by thunder, see the horizon",
+            "Turn us to thousands",
+            "And we'll grow in number",
+            "Fueled by thunder, see the horizon",
+            "Turn us to thousands",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "'Til my shadow turns to sun rays",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "And on and on we'll go"
+        ];
 
         let currentLineIndex = 0;
+        let correctChars = 0;
+        let totalChars = 0;
+        let userInput = "";
 
-        function displayLyricsLine() {
-            lyricsContainer.innerHTML = ""; // Clear previous line
-            const currentLine = lyrics[currentLineIndex];
-            currentLine.split("").forEach(char => {
-                const span = document.createElement("span");
-                span.textContent = char === " " ? "\u00A0" : char; // Preserve spaces
-                span.dataset.char = char; // Store the correct character
-                lyricsContainer.appendChild(span);
-            });
+        const lyricsDisplay = document.getElementById('lyrics-container');
+        const feedback = document.getElementById('feedback');
+        const accuracyDisplay = document.getElementById('accuracy');
+        const startButton = document.getElementById('start-button');
+        const gameOverOverlay = document.getElementById('game-over-overlay');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const playAgainButton = document.getElementById('play-again-button');
 
-            // Add focus for the first letter
-            enableTypingOnLetters();
+        function displayLyricsLine(index) {
+            if (index < lyrics.length) {
+                const currentLine = lyrics[index];
+                lyricsDisplay.innerHTML = '';
+                for (let i = 0; i < currentLine.length; i++) {
+                    const span = document.createElement('span');
+                    span.textContent = currentLine[i];
+                    lyricsDisplay.appendChild(span);
+                }
+                userInput = "";
+                feedback.textContent = '';
+                correctChars = 0;
+                totalChars = currentLine.length;
+                updateAccuracyDisplay();
+            } else {
+                endGame();
+            }
         }
 
-        function enableTypingOnLetters() {
-            const spans = lyricsContainer.querySelectorAll("span");
-            let currentIndex = 0;
+        function handleKeyDown(event) {
+            const key = event.key;
 
-            function focusNextLetter() {
-                if (currentIndex < spans.length) {
-                    spans[currentIndex].focus();
-                } else {
-                    currentLineIndex++;
-                    if (currentLineIndex < lyrics.length) {
-                        displayLyricsLine();
+            if (key === 'Backspace') {
+                if (userInput.length > 0) {
+                    userInput = userInput.slice(0, -1);
+                    const spans = lyricsDisplay.querySelectorAll('span');
+                    spans[userInput.length].style.color = '#ddd'; // Revert to default
+                }
+            } else if (key.length === 1) {
+                const expectedChar = lyrics[currentLineIndex][userInput.length];
+                const spans = lyricsDisplay.querySelectorAll('span');
+
+                if (userInput.length < spans.length) {
+                    if (key === expectedChar) {
+                        spans[userInput.length].style.color = 'green';
+                        correctChars++;
                     } else {
-                        alert("You finished typing all the lyrics!");
-                        startButton.style.display = "block"; // Show the Start Game button again
+                        spans[userInput.length].style.color = 'red';
                     }
+                    userInput += key;
+                }
+
+                if (userInput.length === spans.length) {
+                    currentLineIndex++;
+                    displayLyricsLine(currentLineIndex);
                 }
             }
 
-            document.addEventListener("keydown", (event) => {
-                if (currentIndex >= spans.length) return;
+            updateAccuracyDisplay();
+        }
 
-                const span = spans[currentIndex];
-                const typedChar = event.key;
-
-                if (typedChar.length === 1) {
-                    const correctChar = span.dataset.char;
-                    if (typedChar === correctChar) {
-                        span.classList.add("correct");
-                    } else {
-                        span.classList.add("incorrect");
-                    }
-                    currentIndex++;
-                    focusNextLetter();
-                }
-            });
-
-            focusNextLetter();
+        function updateAccuracyDisplay() {
+            const accuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 0;
+            accuracyDisplay.textContent = `Accuracy: ${accuracy}%`;
         }
 
         function startGame() {
             currentLineIndex = 0;
-            startButton.style.display = "none"; // Hide the Start Game button
-            displayLyricsLine();
-            videoPlayer.currentTime = 0; // Start video from the beginning
-            videoPlayer.volume = 0.1; // Set volume to 10%
-            videoPlayer.play();
+            displayLyricsLine(currentLineIndex);
+            document.addEventListener('keydown', handleKeyDown);
+            startButton.style.display = 'none';
         }
 
-        startButton.addEventListener("click", startGame);
+        function endGame() {
+            document.removeEventListener('keydown', handleKeyDown);
+            gameOverOverlay.style.display = 'flex';
+        }
+
+        startButton.addEventListener('click', startGame);
+        playAgainButton.addEventListener('click', startGame);
     </script>
 </body>
 </html>
