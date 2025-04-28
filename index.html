@@ -128,7 +128,7 @@
     <script>
         // --- YouTube Player ---
         let player;
-        const fallbackVideoId = 'dQw4w9WgXcQ'; // A valid fallback YouTube video ID (Rickroll for fun)
+        const fallbackVideoId = 'XsZZQPKLChY'; // Set to the provided YouTube video ID
         let playerReady = false;
 
         function onYouTubePlayerReady(event) {
@@ -145,7 +145,7 @@
         }
 
         window.onYouTubeIframeAPIReady = function() {
-            const videoId = prompt("Enter a valid YouTube video ID:", fallbackVideoId) || fallbackVideoId;
+            const videoId = fallbackVideoId; // Use the specified video ID
             player = new YT.Player('youtube-player', {
                 videoId: videoId,
                 height: '100%',
@@ -162,27 +162,50 @@
                     'onReady': onYouTubePlayerReady,
                     'onError': function(event) {
                         console.error("YouTube Player Error:", event);
-                        alert("An error occurred loading the video. Loading fallback video.");
-                        player.loadVideoById(fallbackVideoId);
+                        alert("An error occurred loading the video.");
                     }
                 }
             });
         };
 
+        // --- Lyrics Game Logic ---
+        const lyrics = [
+            "Hold me close 'til I get up",
+            "Time is barely on our side",
+            "I don't wanna waste what's left",
+            "The storms we chase are leading us",
+            "And love is all we'll ever trust, yeah"
+        ];
+        let currentLineIndex = 0;
+
+        function displayLyricsLine(index) {
+            const lyricsContainer = document.getElementById('lyrics-container');
+            lyricsContainer.innerHTML = ''; // Clear any existing lyrics
+            const currentLine = lyrics[index];
+            currentLine.split('').forEach(char => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                lyricsContainer.appendChild(span);
+            });
+        }
+
         function startGame() {
-            console.log("Start Game clicked. Player Ready:", playerReady);
             if (!playerReady) {
                 alert("Please wait for the video to load before starting the game.");
                 return;
             }
-            alert("Game has started!");
+            currentLineIndex = 0;
+            displayLyricsLine(currentLineIndex);
+            if (player) {
+                player.playVideo();
+            }
         }
+
+        document.getElementById('start-button').addEventListener('click', startGame);
 
         window.onload = function() {
             loadYouTubeAPI();
         };
-
-        document.getElementById('start-button').addEventListener('click', startGame);
     </script>
 </body>
 </html>
