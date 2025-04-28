@@ -103,27 +103,51 @@
         const lyricsContainer = document.getElementById('lyrics-container');
         const startButton = document.getElementById('start-button');
 
-        const lyrics = [
-            "Hold me close 'til I get up",
-            "Time is barely on our side",
-            "I don't wanna waste what's left",
-            "The storms we chase are leading us",
-            "And love is all we'll ever trust, yeah",
-            "No, I don't wanna waste what's left",
-            "And on and on we'll go",
-            "Through the wastelands, through the highways",
-            "To my shadow, through the sunrays",
-            "And on and on we'll go",
-            "Through the wastelands, through the highways",
-            "And on and on we'll go"
-        ];
+        const lyrics = `
+            Hold me close 'til I get up
+            Time is barely on our side
+            I don't wanna waste what's left
+            The storms we chase are leading us
+            And love is all we'll ever trust, yeah
+            No, I don't wanna waste what's left
+            And on and on we'll go
+            Through the wastelands, through the highways
+            'Til my shadow turns to sun rays
+            And on and on we'll go
+            Through the wastelands, through the highways
+            And on and on we'll go
+            Oh, on we'll go
+            Finding life along the way
+            Melodies we haven't played
+            No, I don't want no rest
+            Echoin' around these walls
+            Fighting to create a song (yeah)
+            I don't wanna miss a beat
+            And on and on we'll go
+            Through the wastelands, through the highways
+            'Til my shadow turns to sun rays
+            And on and on we'll go
+            Through the wastelands, through the highways
+            And on and on we'll go
+            And we'll grow in number
+            Fueled by thunder, see the horizon
+            Turn us to thousands
+            And we'll grow in number
+            Fueled by thunder, see the horizon
+            Turn us to thousands
+            And on and on we'll go
+            Through the wastelands, through the highways
+            'Til my shadow turns to sun rays
+            And on and on we'll go
+            Through the wastelands, through the highways
+            And on and on we'll go
+        `.trim().split('\n');
 
         let currentLineIndex = 0;
-        let currentLine = "";
 
         function displayLyricsLine() {
             lyricsContainer.innerHTML = ""; // Clear previous line
-            currentLine = lyrics[currentLineIndex];
+            const currentLine = lyrics[currentLineIndex];
             currentLine.split("").forEach(char => {
                 const span = document.createElement("span");
                 span.textContent = char === " " ? "\u00A0" : char; // Preserve spaces
@@ -131,7 +155,6 @@
                 lyricsContainer.appendChild(span);
             });
 
-            // Focus on the first letter
             focusNextLetter();
         }
 
@@ -144,7 +167,6 @@
                 }
             }
 
-            // If all letters in the line are correct, move to the next line
             currentLineIndex++;
             if (currentLineIndex < lyrics.length) {
                 displayLyricsLine();
@@ -158,19 +180,15 @@
             const span = event.target;
             const typedChar = event.key;
 
-            // Ignore special keys like Shift, Backspace, etc.
             if (typedChar.length !== 1) return;
 
             const correctChar = span.dataset.char;
             if (typedChar === correctChar) {
                 span.classList.add("correct");
-                span.classList.remove("incorrect");
             } else {
                 span.classList.add("incorrect");
-                span.classList.remove("correct");
             }
 
-            // Move to the next letter
             focusNextLetter();
         }
 
