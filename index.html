@@ -61,26 +61,17 @@
             margin: 2px;
             min-width: 25px;
             transition: background-color 0.2s ease, color 0.2s ease;
+            border: 1px solid transparent;
         }
         #lyrics-container span.correct {
             background-color: #28a745;
+            border-color: #28a745;
             color: white;
         }
         #lyrics-container span.incorrect {
             background-color: #dc3545;
+            border-color: #dc3545;
             color: white;
-        }
-        #typing-container {
-            margin-top: 20px;
-            display: none; /* Hidden until the game starts */
-        }
-        #typing-input {
-            padding: 10px;
-            font-size: 1.2em;
-            width: 80%;
-            max-width: 600px;
-            border: none;
-            border-radius: 6px;
         }
         #start-button {
             padding: 12px 24px;
@@ -106,86 +97,93 @@
         </video>
     </div>
     <div id="lyrics-container"></div>
-    <div id="typing-container">
-        <input type="text" id="typing-input" placeholder="Type here..." />
-    </div>
     <button id="start-button">Start Game</button>
     <script>
         const videoPlayer = document.getElementById('video-player');
         const lyricsContainer = document.getElementById('lyrics-container');
-        const typingInput = document.getElementById('typing-input');
         const startButton = document.getElementById('start-button');
-        const typingContainer = document.getElementById('typing-container');
 
         const lyrics = [
             "Hold me close 'til I get up",
             "Time is barely on our side",
             "I don't wanna waste what's left",
             "The storms we chase are leading us",
-            "And love is all we'll ever trust, yeah"
+            "And love is all we'll ever trust, yeah",
+            "No, I don't wanna waste what's left",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "To my shadow, through the sunrays",
+            "And on and on we'll go",
+            "Through the wastelands, through the highways",
+            "And on and on we'll go"
         ];
 
         let currentLineIndex = 0;
         let currentLine = "";
-        let typedText = "";
 
         function displayLyricsLine() {
             lyricsContainer.innerHTML = ""; // Clear previous line
             currentLine = lyrics[currentLineIndex];
             currentLine.split("").forEach(char => {
                 const span = document.createElement("span");
-                span.textContent = char;
+                span.textContent = char === " " ? "\u00A0" : char; // Preserve spaces
+                span.dataset.char = char; // Store the correct character
                 lyricsContainer.appendChild(span);
             });
+
+            // Focus on the first letter
+            focusNextLetter();
         }
 
-        function checkTyping() {
-            typedText = typingInput.value;
+        function focusNextLetter() {
             const spans = lyricsContainer.querySelectorAll("span");
-            
-            // Check each character
-            let allCorrect = true;
-            typedText.split("").forEach((char, index) => {
-                if (spans[index]) {
-                    if (char === currentLine[index]) {
-                        spans[index].classList.add("correct");
-                        spans[index].classList.remove("incorrect");
-                    } else {
-                        spans[index].classList.add("incorrect");
-                        spans[index].classList.remove("correct");
-                        allCorrect = false;
-                    }
-                }
-            });
-
-            // If all characters are correct and the length matches, move to next line
-            if (allCorrect && typedText.length === currentLine.length) {
-                currentLineIndex++;
-                typingInput.value = ""; // Clear input
-                if (currentLineIndex < lyrics.length) {
-                    displayLyricsLine(); // Display next line
-                } else {
-                    // Game finished
-                    alert("You finished typing all the lyrics!");
-                    typingInput.disabled = true;
+            for (const span of spans) {
+                if (!span.classList.contains("correct")) {
+                    span.focus();
+                    return;
                 }
             }
+
+            // If all letters in the line are correct, move to the next line
+            currentLineIndex++;
+            if (currentLineIndex < lyrics.length) {
+                displayLyricsLine();
+            } else {
+                alert("You finished typing all the lyrics!");
+                startButton.style.display = "block"; // Show the Start Game button again
+            }
+        }
+
+        function handleTyping(event) {
+            const span = event.target;
+            const typedChar = event.key;
+
+            // Ignore special keys like Shift, Backspace, etc.
+            if (typedChar.length !== 1) return;
+
+            const correctChar = span.dataset.char;
+            if (typedChar === correctChar) {
+                span.classList.add("correct");
+                span.classList.remove("incorrect");
+            } else {
+                span.classList.add("incorrect");
+                span.classList.remove("correct");
+            }
+
+            // Move to the next letter
+            focusNextLetter();
         }
 
         function startGame() {
             currentLineIndex = 0;
-            typingInput.value = "";
-            typingInput.disabled = false;
             startButton.style.display = "none"; // Hide the Start Game button
-            typingContainer.style.display = "block"; // Show the typing input field
             displayLyricsLine();
             videoPlayer.currentTime = 0; // Start video from the beginning
             videoPlayer.volume = 0.1; // Set volume to 10%
             videoPlayer.play();
-            typingInput.focus();
         }
 
-        typingInput.addEventListener("input", checkTyping);
+        lyricsContainer.addEventListener("keydown", handleTyping);
         startButton.addEventListener("click", startGame);
     </script>
 </body>
