@@ -159,6 +159,36 @@
         </div>
     </div>
     <script>
+        // YouTube Player Setup
+        let player;
+        let gameStarted = false;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtube-player', {
+                height: '390',
+                width: '640',
+                videoId: 'XsZZQPKLChY', // Replace with your desired video ID
+                events: {
+                    onReady: onPlayerReady,
+                    onStateChange: onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            startButton.addEventListener('click', () => {
+                gameStarted = true;
+                player.playVideo();
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED && gameStarted) {
+                endGame();
+            }
+        }
+
+        // Lyrics Typing Game Logic
         const lyrics = [
             "Hold me close 'til I get up",
             "Time is barely on our side",
@@ -179,18 +209,6 @@
             "Echoin' around these walls",
             "Fighting to create a song (yeah)",
             "I don't wanna miss a beat",
-            "And on and on we'll go",
-            "Through the wastelands, through the highways",
-            "'Til my shadow turns to sun rays",
-            "And on and on we'll go",
-            "Through the wastelands, through the highways",
-            "And on and on we'll go",
-            "And we'll grow in number",
-            "Fueled by thunder, see the horizon",
-            "Turn us to thousands",
-            "And we'll grow in number",
-            "Fueled by thunder, see the horizon",
-            "Turn us to thousands",
             "And on and on we'll go",
             "Through the wastelands, through the highways",
             "'Til my shadow turns to sun rays",
@@ -282,6 +300,12 @@
 
         startButton.addEventListener('click', startGame);
         playAgainButton.addEventListener('click', startGame);
+
+        // Load the YouTube IFrame API
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     </script>
 </body>
 </html>
