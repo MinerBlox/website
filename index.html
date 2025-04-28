@@ -18,14 +18,14 @@
             color: #fff;
             overflow: auto;
         }
-        #youtube-player-container {
+        #video-container {
             margin-top: 20px;
             position: relative;
             display: flex;
             justify-content: center;
             width: fit-content;
         }
-        #youtube-player {
+        video {
             border-radius: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             width: 80vw;
@@ -77,96 +77,18 @@
         #start-button:hover {
             background-color: #0056b3;
         }
-        #game-over-overlay {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            z-index: 4;
-            display: none;
-        }
-        #game-over-content {
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid #fff;
-        }
-        #play-again-button {
-            padding: 12px 24px;
-            font-size: 1.2em;
-            color: white;
-            background-color: #007bff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin: 10px;
-        }
-        #play-again-button:hover {
-            background-color: #0056b3;
-        }
     </style>
 </head>
 <body>
-    <div id="youtube-player-container">
-        <div id="youtube-player"></div>
+    <div id="video-container">
+        <video id="video-player" controls>
+            <source src="https://raw.githubusercontent.com/MinerBlox/website/main/Cartoon%2C%20J%C3%A9ja%20-%20On%20%26%20On%20%28Lyrics%29%20feat.%20Daniel%20Levi.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
     </div>
     <div id="lyrics-container"></div>
     <button id="start-button">Start Game</button>
-    <div id="game-over-overlay">
-        <div id="game-over-content">
-            <h2>Game Over</h2>
-            <p>Your Score: <span id="final-score">0</span></p>
-            <button id="play-again-button">Play Again</button>
-        </div>
-    </div>
     <script>
-        // --- YouTube Player ---
-        let player;
-        const videoId = 'XsZZQPKLChY'; // Automatically set the video ID
-        let playerReady = false;
-
-        function onYouTubePlayerReady(event) {
-            player = event.target;
-            playerReady = true;
-            console.log("YouTube Player is ready.");
-        }
-
-        function loadYouTubeAPI() {
-            const tag = document.createElement('script');
-            tag.src = 'https://www.youtube.com/iframe_api';
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        }
-
-        window.onYouTubeIframeAPIReady = function() {
-            player = new YT.Player('youtube-player', {
-                videoId: videoId,
-                height: '100%',
-                width: '100%',
-                playerVars: {
-                    autoplay: 0,
-                    controls: 1,
-                    modestbranding: 1,
-                    rel: 0,
-                    showinfo: 0,
-                    iv_load_policy: 3
-                },
-                events: {
-                    'onReady': onYouTubePlayerReady,
-                    'onError': function(event) {
-                        console.error("YouTube Player Error:", event);
-                        alert("An error occurred loading the video.");
-                    }
-                }
-            });
-        };
-
         // --- Lyrics Game Logic ---
         const lyrics = [
             "Hold me close 'til I get up",
@@ -189,22 +111,15 @@
         }
 
         function startGame() {
-            if (!playerReady) {
-                alert("Please wait for the video to load before starting the game.");
-                return;
-            }
+            const videoPlayer = document.getElementById('video-player');
             currentLineIndex = 0;
             displayLyricsLine(currentLineIndex);
-            if (player) {
-                player.playVideo();
-            }
+
+            // Play video when the game starts
+            videoPlayer.play();
         }
 
         document.getElementById('start-button').addEventListener('click', startGame);
-
-        window.onload = function() {
-            loadYouTubeAPI();
-        };
     </script>
 </body>
 </html>
