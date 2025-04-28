@@ -155,39 +155,45 @@
                 lyricsContainer.appendChild(span);
             });
 
-            focusNextLetter();
+            // Add focus for the first letter
+            enableTypingOnLetters();
         }
 
-        function focusNextLetter() {
+        function enableTypingOnLetters() {
             const spans = lyricsContainer.querySelectorAll("span");
-            for (const span of spans) {
-                if (!span.classList.contains("correct")) {
-                    span.focus();
-                    return;
+            let currentIndex = 0;
+
+            function focusNextLetter() {
+                if (currentIndex < spans.length) {
+                    spans[currentIndex].focus();
+                } else {
+                    currentLineIndex++;
+                    if (currentLineIndex < lyrics.length) {
+                        displayLyricsLine();
+                    } else {
+                        alert("You finished typing all the lyrics!");
+                        startButton.style.display = "block"; // Show the Start Game button again
+                    }
                 }
             }
 
-            currentLineIndex++;
-            if (currentLineIndex < lyrics.length) {
-                displayLyricsLine();
-            } else {
-                alert("You finished typing all the lyrics!");
-                startButton.style.display = "block"; // Show the Start Game button again
-            }
-        }
+            document.addEventListener("keydown", (event) => {
+                if (currentIndex >= spans.length) return;
 
-        function handleTyping(event) {
-            const span = event.target;
-            const typedChar = event.key;
+                const span = spans[currentIndex];
+                const typedChar = event.key;
 
-            if (typedChar.length !== 1) return;
-
-            const correctChar = span.dataset.char;
-            if (typedChar === correctChar) {
-                span.classList.add("correct");
-            } else {
-                span.classList.add("incorrect");
-            }
+                if (typedChar.length === 1) {
+                    const correctChar = span.dataset.char;
+                    if (typedChar === correctChar) {
+                        span.classList.add("correct");
+                    } else {
+                        span.classList.add("incorrect");
+                    }
+                    currentIndex++;
+                    focusNextLetter();
+                }
+            });
 
             focusNextLetter();
         }
@@ -201,7 +207,6 @@
             videoPlayer.play();
         }
 
-        lyricsContainer.addEventListener("keydown", handleTyping);
         startButton.addEventListener("click", startGame);
     </script>
 </body>
