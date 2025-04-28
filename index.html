@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Type the Lyrics</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    
+    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -247,7 +247,7 @@
             if (!youtubeScriptLoaded) {
                 // If the script is not loaded, load it and then load the video
                 const tag = document.createElement('script');
-                tag.src = 'https://www.youtube.com/iframe_api'; // Corrected YouTube API URL
+                tag.src = 'https://www.youtube.com/iframe_api';
                 const firstScriptTag = document.getElementsByTagName('script')[0];
                 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
                 // Set a flag to indicate that the script has been loaded
@@ -470,7 +470,7 @@
         // Load the YouTube API script asynchronously
         function loadYouTubeAPI() {
             const tag = document.createElement('script');
-            tag.src = 'https://www.youtube.com/iframe_api'; // Corrected YouTube API URL
+            tag.src = 'https://www.youtube.com/iframe_api';
             const firstScriptTag = document.getElementsByTagName('script')[0];
             firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
         }
