@@ -70,6 +70,18 @@
             background-color: #dc3545;
             color: white;
         }
+        #typing-container {
+            margin-top: 20px;
+            display: none; /* Hidden until the game starts */
+        }
+        #typing-input {
+            padding: 10px;
+            font-size: 1.2em;
+            width: 80%;
+            max-width: 600px;
+            border: none;
+            border-radius: 6px;
+        }
         #start-button {
             padding: 12px 24px;
             font-size: 1.2em;
@@ -94,13 +106,16 @@
         </video>
     </div>
     <div id="lyrics-container"></div>
-    <input type="text" id="typing-input" placeholder="Type here..." style="margin-top: 20px; padding: 10px; font-size: 1.2em; width: 80%; max-width: 600px; border: none; border-radius: 6px;" />
+    <div id="typing-container">
+        <input type="text" id="typing-input" placeholder="Type here..." />
+    </div>
     <button id="start-button">Start Game</button>
     <script>
         const videoPlayer = document.getElementById('video-player');
         const lyricsContainer = document.getElementById('lyrics-container');
         const typingInput = document.getElementById('typing-input');
         const startButton = document.getElementById('start-button');
+        const typingContainer = document.getElementById('typing-container');
 
         const lyrics = [
             "Hold me close 'til I get up",
@@ -161,6 +176,8 @@
             currentLineIndex = 0;
             typingInput.value = "";
             typingInput.disabled = false;
+            startButton.style.display = "none"; // Hide the Start Game button
+            typingContainer.style.display = "block"; // Show the typing input field
             displayLyricsLine();
             videoPlayer.currentTime = 0; // Start video from the beginning
             videoPlayer.volume = 0.1; // Set volume to 10%
