@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reps Central – Trusted Sellers</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { background:#f8f8f8; }
+.trusted-seller-glow {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  height: 240px;
+  cursor: pointer;
+  transition: transform .25s ease;
+  box-shadow:0 10px 35px rgba(0,0,0,0.25);
+}
+.trusted-seller-glow:hover { transform: scale(1.03); }
+.trusted-seller-bg {
+  position:absolute; inset:0;
+  background-size:cover; background-position:center;
+  filter: blur(4px) brightness(0.85);
+}
+.trusted-seller-center {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem; font-weight:800; color:white;
+  text-shadow:0 0 10px rgba(0,0,0,0.8);
+}
+</style>
+</head>
+
+<body class="text-gray-800 font-sans min-h-screen p-4 sm:p-8">
+
+<!-- SIDEBAR -->
+<div id="sidebar" class="fixed top-0 left-0 h-full w-64 p-6 shadow-2xl transform -translate-x-full transition-transform duration-300 z-50 bg-white">
+  <h3 class="text-xl font-bold mb-6 text-accent">Navigation</h3>
+  <nav class="flex flex-col space-y-3">
+    <button onclick="navigate('home')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Home</button>
+    <button onclick="navigate('data')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Spreadsheet</button>
+    <button onclick="navigate('link-converter')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Link Converter</button>
+    <button onclick="navigate('trusted-sellers')" class="text-left py-2 px-3 rounded-lg font-medium bg-gray-200">Trusted Sellers</button>
+  </nav>
+</div>
+
+<div id="sidebarBackdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
+
+<div class="max-w-7xl mx-auto">
+  <header class="flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-4 sm:px-8 pt-4 bg-white">
+    <svg onclick="toggleSidebar()" class="w-8 h-8 text-accent cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <img onclick="navigate('home')" src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10 cursor-pointer" />
+    <div class="w-5"></div>
+  </header>
+
+  <div class="py-10">
+    <h1 class="text-4xl font-bold mb-8 text-primary-dark">Trusted Sellers</h1>
+
+    <div id="sellersGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+      <p id="loadingState" class="text-gray-400 col-span-full text-center">Loading sellers…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const bg=document.getElementById('sidebarBackdrop');
+  const open = sb.classList.contains("-translate-x-full");
+  if(open){
+    sb.classList.remove("-translate-x-full");
+    bg.classList.remove("hidden");
+  } else {
+    sb.classList.add("-translate-x-full");
+    bg.classList.add("hidden");
+  }
+}
+function navigate(p){
+  if(p==='home') location.href='index.html';
+  if(p==='data') location.href='products.html';
+  if(p==='link-converter') location.href='link-converter.html';
+  if(p==='trusted-sellers') location.href='trusted-sellers.html';
+}
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyDTIzoJlvrr0mYxwx82cQ9JJn8rXrMEy7JA",
+  authDomain:"reps-central.firebaseapp.com",
+  projectId:"reps-central",
+  storageBucket:"reps-central.firebasestorage.app",
+  messagingSenderId:"812299387060",
+  appId:"1:812299387060:web:1c93d1e7bf30b565536d7e1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const grid = document.getElementById("sellersGrid");
+const loading = document.getElementById("loadingState");
+
+onSnapshot(collection(db,"sellers"), snap=>{
+  grid.innerHTML="";
+  if(snap.empty){
+    grid.innerHTML = "<p class='text-gray-400 col-span-full text-center'>No sellers found.</p>";
+    return;
+  }
+
+  snap.forEach(doc=>{
+    const s = doc.data();
+    const name = s.name || "Seller";
+    const img = s.image || "https://placehold.co/600x400/000/FFF?text=Seller";
+
+    const el = document.createElement("div");
+    el.className = "trusted-seller-glow";
+
+    el.innerHTML = `
+      <div class="trusted-seller-bg" style="background-image:url('${img}')"></div>
+      <div class="trusted-seller-center">${name}</div>
+    `;
+
+    grid.appendChild(el);
+  });
+});
+</script>
+
+</body>
+</html>

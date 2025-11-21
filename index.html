@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reps Central Console</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "primary-dark": "#111827",
+            "primary-light": "#FFFFFF",
+            accent: "#00AEEF",
+            subtle: "#E5E7EB",
+            "background-light": "#F8F8F8",
+          },
+          fontFamily: {
+            sans: ["Inter", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: var(--background-light, #f8f8f8);
+      color: #4b5563;
+    }
+
+    .text-primary-dark {
+      color: #111827 !important;
+    }
+
+    .card,
+    .tiled-product-card {
+      background-color: white !important;
+      border-color: #e5e7eb !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -2px rgba(0, 0, 0, 0.06) !important;
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1),
+        0 5px 10px -2px rgba(0, 0, 0, 0.05);
+      transform: translateY(-4px);
+    }
+    .border-subtle {
+      border-color: #e5e7eb;
+    }
+
+    .header-gradient {
+      background: linear-gradient(135deg, #ffffff 60%, #e0f7fa 100%);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      background-size: 200% 100%;
+      transition: background 0.5s ease;
+      animation: subtle-shift-pill 4s linear infinite alternate;
+    }
+
+    @keyframes subtle-shift-pill {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+
+    .status-available {
+      background-image: linear-gradient(90deg, #10b981, #00aeef);
+      color: white;
+      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.4);
+    }
+    .status-dead {
+      background-image: linear-gradient(90deg, #ef4444, #ec4899);
+      color: white;
+      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4);
+    }
+    .status-low-stock {
+      background-image: linear-gradient(90deg, #f59e0b, #f97316);
+      color: white;
+      box-shadow: 0 1px 3px rgba(245, 158, 11, 0.4);
+    }
+    .status-checking {
+      background-image: linear-gradient(90deg, #64748b, #475569);
+      color: white;
+      box-shadow: 0 1px 3px rgba(100, 116, 139, 0.4);
+    }
+
+    .home-nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .home-nav-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .auto-scroll-viewport {
+      height: 500px;
+      overflow: hidden;
+      position: relative;
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 5%,
+        black 95%,
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 5%,
+        black 95%,
+        transparent 100%
+      );
+      padding: 1rem 0;
+    }
+
+    .scrolling-content-wrapper {
+      animation: autoScroll var(--scroll-duration, 15s) linear infinite;
+      will-change: transform;
+    }
+
+    @keyframes autoScroll {
+      0% {
+        transform: translateY(0);
+      }
+      100% {
+        transform: translateY(var(--scroll-distance, -1000px));
+      }
+    }
+
+    @keyframes shake {
+      10%,
+      90% {
+        transform: translate3d(-1px, 0, 0);
+      }
+      20%,
+      80% {
+        transform: translate3d(2px, 0, 0);
+      }
+      30%,
+      50%,
+      70% {
+        transform: translate3d(-4px, 0, 0);
+      }
+      40%,
+      60% {
+        transform: translate3d(4px, 0, 0);
+      }
+    }
+    .animate-shake {
+      animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    .glow-box {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border-radius: 0.75rem;
+      color: white;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.125rem;
+      cursor: pointer;
+      padding: 1.5rem;
+    }
+    .glow-box:hover {
+      transform: translateY(-5px) scale(1.03);
+    }
+    .glow-box-blue {
+      background-color: #3b82f6;
+      box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.4);
+    }
+    .glow-box-blue:hover {
+      box-shadow: 0 0 30px 10px rgba(59, 130, 246, 0.5);
+    }
+    .glow-box-red {
+      background-color: #ef4444;
+      box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.4);
+    }
+    .glow-box-red:hover {
+      box-shadow: 0 0 30px 10px rgba(239, 68, 68, 0.5);
+    }
+    .glow-box-emerald {
+      background-color: #10b981;
+      box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.4);
+    }
+    .glow-box-emerald:hover {
+      box-shadow: 0 0 30px 10px rgba(16, 185, 129, 0.5);
+    }
+    .glow-box-purple {
+      background-color: #8b5cf6;
+      box-shadow: 0 0 20px 5px rgba(139, 92, 246, 0.4);
+    }
+    .glow-box-purple:hover {
+      box-shadow: 0 0 30px 10px rgba(139, 92, 246, 0.5);
+    }
+    .glow-box-amber {
+      background-color: #f59e0b;
+      box-shadow: 0 0 20px 5px rgba(245, 158, 11, 0.4);
+    }
+    .glow-box-amber:hover {
+      box-shadow: 0 0 30px 10px rgba(245, 158, 11, 0.5);
+    }
+    .glow-box-slate {
+      background-color: #64748b;
+      box-shadow: 0 0 20px 5px rgba(100, 116, 139, 0.4);
+    }
+    .glow-box-slate:hover {
+      box-shadow: 0 0 30px 10px rgba(100, 116, 139, 0.5);
+    }
+    .glow-box-orange-rec {
+      background-color: #f97316;
+      border: 2px solid #fb923c;
+      box-shadow: 0 0 20px 8px rgba(251, 146, 60, 0.5);
+    }
+  
+/* Trusted seller cards */
+.trusted-seller-glow {
+  position: relative;
+  border-radius: 1rem;
+  box-shadow: 0 0 0 0 rgba(0,0,0,0);
+  transition: box-shadow 0.4s ease, transform 0.3s ease;
+}
+.trusted-seller-glow:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.trusted-seller-card {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+.trusted-seller-card:hover {
+  transform: scale(1.02);
+}
+
+.trusted-seller-bg {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(3px);
+  transform: scale(1.1);
+}
+
+.trusted-seller-center-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 0 12px rgba(0,0,0,0.7);
+}
+
+/* Info panel that pops out below card on hover */
+.trusted-seller-info-panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 12px);
+  width: 90%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.trusted-seller-info-inner {
+  background: #ffffff;
+  border-radius: 0 0 1rem 1rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 18px 35px rgba(15,23,42,0.25);
+  border-top: 1px solid rgba(148,163,184,0.65);
+  font-size: 0.8rem;
+  color: #111827;
+}
+
+.trusted-seller-info-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.trusted-seller-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.15rem;
+  gap: 0.5rem;
+}
+
+.trusted-seller-info-row-label {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.trusted-seller-info-notes {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.trusted-seller-glow:hover .trusted-seller-info-panel {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+
+</style>
+</head>
+<body class="text-gray-800 font-sans min-h-screen p-4 sm:p-8">
+  <!-- Sidebar -->
+  <div
+    id="sidebar"
+    class="fixed top-0 left-0 h-full w-64 p-6 shadow-2xl transform -translate-x-full transition-transform duration-300 z-50 bg-white border-r border-subtle"
+  >
+    <div class="flex justify-between items-center mb-8">
+      <h3 class="text-xl font-bold text-accent">Navigation</h3>
+      <button
+        onclick="toggleSidebar()"
+        class="p-1 rounded-full text-gray-600 hover:bg-gray-100"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="flex flex-col space-y-3">
+      <button
+        onclick="openProductsSelection()"
+        class="text-left py-2 px-3 rounded-lg font-medium text-primary-dark hover:bg-gray-100 transition flex items-center"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-accent"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10h2m-2 0h2m2 0V7m2 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+          ></path>
+        </svg>
+        Go to Spreadsheet
+      </button>
+      <button
+        onclick="navigate('link-converter')"
+        class="text-left py-2 px-3 rounded-lg font-medium text-primary-dark hover:bg-gray-100 transition flex items-center"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-accent"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M7 11.5V14m0-2.5v-2.5m0 5h2m0-5h2m0 0H9m7 0a4 4 0 00-4 4v2m0 0v2m0-4h2m-2 0h2m0 0h2m0 0h2"
+          ></path>
+        </svg>
+        Link Converter
+      </button>
+      <button
+        onclick="navigate('trusted-sellers')"
+        class="text-left py-2 px-3 rounded-lg font-medium text-primary-dark hover:bg-gray-100 transition flex items-center"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-accent"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m5.618-4.104A9 9 0 0012 1m-1.765 1.765A9 9 0 003 12m18 0a9 9 0 01-9 9m-1.765-1.765A9 9 0 0121 12"
+          ></path>
+        </svg>
+        Trusted Sellers
+      </button>
+      <button
+        class="text-left py-2 px-3 rounded-lg font-medium text-primary-dark hover:bg-gray-100 transition flex items-center"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-accent"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M14 10h4.764a2 2 0 011.857 2.193l-2.675 10.384A2 2 0 0118.427 22H5.573a2 2 0 01-1.936-2.533L5.836 12H10m-2 0V7A2 2 0 0110 5h4a2 2 0 012 2v5m-8 0h8"
+          ></path>
+        </svg>
+        Socials
+      </button>
+    </nav>
+  </div>
+
+  <!-- Sidebar Backdrop -->
+  <div
+    id="sidebarBackdrop"
+    onclick="toggleSidebar()"
+    class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity duration-300 opacity-0"
+  ></div>
+
+  <!-- Main Container -->
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <header
+      class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-4 sm:px-8 pt-4"
+    >
+      <div class="flex items-center space-x-3">
+        <svg
+          onclick="toggleSidebar()"
+          class="w-8 h-8 text-accent cursor-pointer"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h7"
+          ></path>
+        </svg>
+        <img
+          src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png"
+          alt="Reps Central Logo"
+          class="h-10 cursor-pointer"
+          onclick="navigate('home')"
+        />
+      </div>
+      <div class="w-5 h-5"></div>
+    </header>
+
+    <!-- HOME VIEW -->
+    <div id="home-view" class="py-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 min-h-[70vh]">
+        <!-- Left Column -->
+        <div
+          class="lg:col-span-5 flex flex-col items-center justify-center space-y-6 p-4 lg:p-0"
+        >
+          <div class="cursor-pointer mb-6" onclick="navigate('home')">
+            <img
+              src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png"
+              alt="Reps Central Logo"
+              class="w-48 h-auto"
+            />
+          </div>
+
+          <div class="w-full max-w-sm flex flex-col space-y-4">
+            <button
+              onclick="openProductsSelection()"
+              class="home-nav-btn text-white bg-accent hover:bg-opacity-90 active:bg-opacity-100 shadow-xl shadow-accent/40 text-lg py-3"
+            >
+              PRODUCTS (Spreadsheet)
+            </button>
+            <a
+              href="https://www.reddit.com/r/StreetwearRep"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="home-nav-btn text-white bg-accent hover:bg-opacity-90 active:bg-opacity-100 shadow-xl shadow-accent/40 text-lg py-3"
+            >
+              JOIN THE REDDIT
+            </a>
+          </div>
+
+          <div
+            class="pt-8 border-t border-subtle space-y-2 mt-8 w-full max-w-sm flex flex-col items-center"
+          >
+            <p class="text-sm font-semibold text-primary-dark">Other Tools:</p>
+            <div class="flex flex-col space-y-2 w-full">
+              <button
+                onclick="navigate('link-converter')"
+                class="text-left py-1 px-2 text-sm rounded-lg font-medium text-primary-dark hover:bg-gray-100 transition flex items-center justify-center"
+              >
+                <svg
+                  class="w-4 h-4 mr-2 text-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 11.5V14m0-2.5v-2.5m0 5h2m0-5h2m0 0H9m7 0a4 4 0 00-4 4v2m0 0v2m0-4h2m-2 0h2m0 0h2m0 0h2"
+                  ></path>
+                </svg>
+                Link Converter
+              </button>
+              <button
+                onclick="navigate('trusted-sellers')"
+                class="text-left py-1 px-2 text-sm rounded-lg font-medium text-primary-dark hover:bg-gray-100 transition flex items-center justify-center"
+              >
+                <svg
+                  class="w-4 h-4 mr-2 text-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m5.618-4.104A9 9 0 0012 1m-1.765 1.765A9 9 0 003 12m18 0a9 9 0 01-9 9m-1.765-1.765A9 9 0 0121 12"
+                  ></path>
+                </svg>
+                Trusted Sellers
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Featured New Drops -->
+        <div
+          class="lg:col-span-7 relative h-full min-h-[70vh] p-4 flex flex-col items-center"
+        >
+          <h2
+            class="text-2xl font-bold text-primary-dark mb-4 self-start lg:self-center"
+          >
+            Featured New Drops
+          </h2>
+
+          <div
+            id="autoScrollViewport"
+            class="auto-scroll-viewport w-full max-w-lg lg:max-w-none"
+          >
+            <div id="scrollingContent" class="scrolling-content-wrapper">
+              <div id="productGrid" class="grid grid-cols-2 gap-4">
+                <!-- Featured items injected from Firestore here -->
+              </div>
+            </div>
+          </div>
+          <p
+            id="featuredEmptyState"
+            class="text-sm text-gray-400 mt-3 hidden text-center"
+          >
+            No featured items yet — add products to Firestore to see them here.
+          </p>
+        </div>
+      </div>
+
+      <!-- Stats Section -->
+      <div
+        id="statsSection"
+        class="mt-16 py-12 border-t border-b border-subtle"
+      >
+        <div
+          class="flex flex-col sm:flex-row justify-around items-center space-y-8 sm:space-y-0 text-center"
+        >
+          <div class="flex flex-col items-center">
+            <span id="productCount" class="text-6xl font-extrabold text-accent"
+              >0</span
+            >
+            <p class="text-lg font-medium text-gray-700 mt-2">
+              different products
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center">
+            <span id="userCount" class="text-6xl font-extrabold text-accent"
+              >0</span
+            >
+            <p class="text-lg font-medium text-gray-700 mt-2">daily users</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="mt-16 grid grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="glow-box glow-box-blue">Shoes</div>
+        <div class="glow-box glow-box-red">Jackets</div>
+        <div class="glow-box glow-box-emerald">Accessories</div>
+        <div class="glow-box glow-box-purple">Tops</div>
+        <div class="glow-box glow-box-amber">Bottoms</div>
+        <div class="glow-box glow-box-slate">Miscellaneous</div>
+      </div>
+    </div>
+
+    <!-- DATA VIEW -->
+    
+  </div>
+
+  <script>
+
+    // Sidebar toggling
+    const sidebar = document.getElementById("sidebar");
+    const sidebarBackdrop = document.getElementById("sidebarBackdrop");
+    const body = document.body;
+    let isSidebarOpen = false;
+
+    function toggleSidebar() {
+      isSidebarOpen = !isSidebarOpen;
+      if (isSidebarOpen) {
+        sidebar.classList.remove("-translate-x-full");
+        sidebarBackdrop.classList.remove("hidden");
+        setTimeout(() => sidebarBackdrop.classList.remove("opacity-0"), 10);
+        body.classList.add("overflow-hidden");
+      } else {
+        sidebarBackdrop.classList.add("opacity-0");
+        sidebar.classList.add("-translate-x-full");
+        setTimeout(() => {
+          sidebarBackdrop.classList.add("hidden");
+          body.classList.remove("overflow-hidden");
+        }, 300);
+      }
+    }
+
+    // Navigate between the 4 standalone pages
+    function navigate(page) {
+      if (page === "home") {
+        window.location.href = "index.html";
+      } else if (page === "data") {
+        window.location.href = "products.html";
+      } else if (page === "link-converter") {
+        window.location.href = "link-converter.html";
+      } else if (page === "trusted-sellers") {
+        window.location.href = "trusted-sellers.html";
+      }
+    }
+
+    // --- GLOBAL STATE FOR ITEMS / STATS ---
+    window.allItems = [];
+    let statsValues = { products: 0, users: 130 };
+    let statsAnimationTriggered = false;
+
+    window.setStatsValues = function (productCount, userCount) {
+      statsValues.products = productCount || 0;
+      statsValues.users = userCount || 0;
+
+      const pEl = document.getElementById("productCount");
+      const uEl = document.getElementById("userCount");
+      if (!pEl || !uEl) return;
+
+      if (statsAnimationTriggered) {
+        pEl.textContent = statsValues.products.toLocaleString() + "+";
+        uEl.textContent = statsValues.users.toLocaleString() + "+";
+      }
+    };
+
+    // --- AUTO-SCROLL FEATURED ---
+    function setupAutoScroll() {
+      const viewport = document.getElementById("autoScrollViewport");
+      const content = document.getElementById("scrollingContent");
+      const productGrid = document.getElementById("productGrid");
+      if (!content || !productGrid || !viewport) return;
+
+      let clonedGrid = document.getElementById("productGridClone");
+      if (!clonedGrid) {
+        clonedGrid = productGrid.cloneNode(true);
+        clonedGrid.id = "productGridClone";
+        content.appendChild(clonedGrid);
+      } else {
+        clonedGrid.innerHTML = productGrid.innerHTML;
+      }
+
+      setTimeout(() => {
+        const totalContentHeight = productGrid.offsetHeight;
+        if (totalContentHeight === 0) return;
+
+        const cardElement = productGrid.children[0];
+        if (!cardElement) return;
+
+        const cardHeight = cardElement.offsetHeight;
+        const gapSize = 16;
+        const newViewportHeight = 2 * cardHeight + gapSize;
+        viewport.style.height = newViewportHeight + "px";
+
+        const scrollDistance = totalContentHeight;
+        const scrollDuration = scrollDistance / 50;
+
+        content.style.setProperty("--scroll-distance", `-${scrollDistance}px`);
+        content.style.setProperty("--scroll-duration", `${scrollDuration}s`);
+        content.style.animationPlayState = "running";
+      }, 300);
+    }
+
+    // --- STATS COUNTER ---
+    function animateCounter(elementId, targetValue, duration = 2000) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = timestamp - startTimestamp;
+        const fraction = Math.min(progress / duration, 1);
+        const currentValue = Math.floor(fraction * targetValue);
+        element.textContent = currentValue.toLocaleString() + "+";
+        if (progress < duration) {
+          window.requestAnimationFrame(step);
+        } else {
+          element.textContent = targetValue.toLocaleString() + "+";
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+
+    function runStatsAnimation() {
+      statsAnimationTriggered = true;
+      animateCounter("productCount", statsValues.products || 0, 2000);
+      setTimeout(
+        () => animateCounter("userCount", statsValues.users || 0, 2000),
+        300
+      );
+    }
+
+    function setupStatCounterObserver() {
+      const statsSection = document.getElementById("statsSection");
+      if (!statsSection) return;
+
+      const observer = new IntersectionObserver(
+        (entries, observerInstance) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !statsAnimationTriggered) {
+              runStatsAnimation();
+              observerInstance.unobserve(entry.target);
+            }
+          });
+        },
+        {
+          root: null,
+          threshold: 0.1,
+        }
+      );
+
+      observer.observe(statsSection);
+    }
+
+    // --- FEATURED CARD HELPERS ---
+    function mapStatusToClass(status) {
+      const s = (status || "").toLowerCase();
+      if (s === "dead" || s === "link dead") return "status-dead";
+      if (s === "low" || s === "low-stock" || s === "low stock")
+        return "status-low-stock";
+      if (s === "checking") return "status-checking";
+      return "status-available";
+    }
+
+    function mapStatusLabel(status) {
+      if (!status) return "Available";
+      return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    function formatPrice(price) {
+      if (price === undefined || price === null || price === "") return "N/A";
+      if (typeof price === "number") {
+        return "$" + price.toFixed(2);
+      }
+      const p = String(price).trim();
+      if (p.startsWith("$")) return p;
+      return "$" + p;
+    }
+
+    function renderFeaturedFromItems(items) {
+      const grid = document.getElementById("productGrid");
+      const emptyState = document.getElementById("featuredEmptyState");
+      if (!grid) return;
+
+      grid.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        if (emptyState) emptyState.classList.remove("hidden");
+        return;
+      }
+      if (emptyState) emptyState.classList.add("hidden");
+
+      const shuffled = items.slice().sort(() => Math.random() - 0.5);
+      const selection = shuffled.slice(0, 6);
+
+      selection.forEach((item) => {
+        const title = item.title || "Untitled item";
+        const price = formatPrice(item.price);
+        const status = item.status || item.availability || "available";
+        const pillClass = mapStatusToClass(status);
+        const pillLabel = mapStatusLabel(status);
+        const img = item.imageUrl || item.image || "";
+        const imageUrl =
+          img || "https://placehold.co/400x128/00AEEF/ffffff?text=ITEM";
+        const buyLink = item.buyLink || "";
+        const buttonLabel =
+          status && status.toString().toLowerCase().includes("dead")
+            ? "(Link Dead)"
+            : "BUY";
+        const disabled =
+          !buyLink || status.toString().toLowerCase().includes("dead")
+            ? "disabled"
+            : "";
+        const buttonClasses =
+          "mt-2 w-full text-xs py-1.5 rounded-lg transition " +
+          (disabled
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-gray-300 text-gray-700 hover:bg-gray-400");
+
+        const buttonHTML = disabled
+          ? `<button class="${buttonClasses}" disabled>${buttonLabel}</button>`
+          : `<a href="${buyLink}" target="_blank" rel="noopener noreferrer" class="${buttonClasses} flex items-center justify-center">
+               ${buttonLabel}
+             </a>`;
+
+        const cardHTML = `
+          <div class="w-full card tiled-product-card shadow-md border transition transform hover:scale-[1.02] cursor-pointer rounded-xl p-3">
+            <div class="w-full h-32 mb-2 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+              <img src="${imageUrl}" alt="${title}" class="object-contain w-full h-full bg-white p-2"
+                   onerror="this.onerror=null; this.src='https://placehold.co/400x128/E5E7EB/6B7280?text=IMG';" />
+            </div>
+            <h3 class="text-base font-semibold mb-1 truncate text-primary-dark">${title}</h3>
+            <div class="flex justify-between items-center text-sm">
+              <span class="font-bold text-green-600">${price}</span>
+              <span class="status-pill ${pillClass}">${pillLabel}</span>
+            </div>
+            ${buttonHTML}
+          </div>
+        `;
+        grid.insertAdjacentHTML("beforeend", cardHTML);
+      });
+    }
+
+    // Called by Firestore
+    window.updateItemsFromFirestore = function (items) {
+      window.allItems = items || [];
+      renderFeaturedFromItems(window.allItems);
+      const productCount = window.allItems.length;
+      const empty = document.getElementById("featuredEmptyState");
+      if (empty) {
+        empty.classList.toggle("hidden", productCount > 0);
+      }
+      window.setStatsValues(productCount, statsValues.users);
+      setupAutoScroll();
+    };
+
+    window.addEventListener("load", () => {
+      setupAutoScroll();
+      setupStatCounterObserver();
+      window.addEventListener("resize", setupAutoScroll);
+    });
+
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      onSnapshot,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDTIzoJlvrr0mYxwx82cQ9JJn8rXrMEy7JA",
+      authDomain: "reps-central.firebaseapp.com",
+      projectId: "reps-central",
+      storageBucket: "reps-central.firebasestorage.app",
+      messagingSenderId: "812299387060",
+      appId: "1:812299387060:web:1c93d1e7bf30b565536d7e1",
+      measurementId: "G-8T7F9F1FZ9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Real-time items collection
+    const itemsCol = collection(db, "products");
+    onSnapshot(itemsCol, (snapshot) => {
+      const items = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data()
+      }));
+      if (window.updateItemsFromFirestore) {
+        window.updateItemsFromFirestore(items);
+      }
+    });
+
+    // Stats document (for daily users)
+    async function loadStats() {
+      try {
+        const statsRef = doc(db, "meta", "stats");
+        const snap = await getDoc(statsRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          const dailyUsers = data.dailyUsers || data.daily_users || 130;
+          if (window.setStatsValues) {
+            const currentProducts = (window.allItems || []).length;
+            window.setStatsValues(currentProducts, dailyUsers);
+          }
+        }
+      } catch (e) {
+        console.warn("Stats doc not found or error:", e);
+      }
+    }
+    loadStats();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Products Selection Modal -->
+<div id="productsModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+  <div id="productsModalBox" class="relative bg-white rounded-3xl shadow-2xl w-[90%] max-w-sm p-6 flex flex-col items-center gap-6 translate-y-10 opacity-0 transition-all duration-300">
+
+    <button onclick="closeProductsSelection()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+
+    <h2 class="text-xl font-extrabold text-gray-800 text-center">SELECT SPREADSHEET</h2>
+
+    <div class="w-full flex flex-row gap-4">
+
+      <div onmouseenter="hoverOption('video')" onclick="location.href='tiktokitems.html'" class="cursor-pointer bg-gray-50 rounded-2xl p-6 shadow-md hover:scale-95 transition-all flex flex-col items-center gap-3">
+        <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/tiktok.png" class="w-16 h-16" />
+        <span class="text-lg font-semibold text-gray-900">VIDEO ITEMS</span>
+      </div>
+
+      <div onmouseenter="hoverOption('all')" onclick="location.href='products.html'" class="cursor-pointer bg-gray-50 rounded-2xl p-6 shadow-md hover:scale-95 transition-all flex flex-col items-center gap-3">
+        <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/allitems.png" class="w-16 h-16 rounded-md" />
+        <span class="text-lg font-semibold text-gray-900">ALL ITEMS</span>
+      </div>
+
+    </div>
+
+    <p id="selection-message" class="mt-2 text-sm text-center text-gray-500">
+      Hover over an option
+    </p>
+
+  </div>
+</div>
+
+<script>
+function hoverOption(type) {
+  const message = document.getElementById('selection-message');
+  if (type === 'video') {
+    message.textContent = 'Items from TikTok videos';
+  } else {
+    message.textContent = 'Every single item (2000+)';
+  }
+}
+
+function openProductsSelection() {
+  const bg = document.getElementById('productsModal');
+  const box = document.getElementById('productsModalBox');
+  bg.classList.remove('hidden');
+  setTimeout(() => {
+    bg.classList.remove('opacity-0');
+    box.classList.remove('opacity-0','translate-y-10');
+  }, 20);
+}
+function closeProductsSelection() {
+  const bg = document.getElementById('productsModal');
+  const box = document.getElementById('productsModalBox');
+  bg.classList.add('opacity-0');
+  box.classList.add('opacity-0','translate-y-10');
+  setTimeout(() => bg.classList.add('hidden'), 300);
+}
+</script>
+
+
+
+</body>
+</html>
