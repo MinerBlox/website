@@ -11,9 +11,7 @@
       getFirestore, doc, setDoc
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    /* ------------------------------------
-       FIREBASE CONFIG
-    ------------------------------------ */
+    /* FIREBASE CONFIG */
     const firebaseConfig = {
       apiKey: "AIzaSyDTIzoJlvrr0mYxwx82cQ9JJn8rXrMEy7JA",
       authDomain: "reps-central.firebaseapp.com",
@@ -25,13 +23,9 @@
     };
 
     const SECRET = "synctiktoktosite";
-
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    /* ------------------------------------
-       MAIN SYNC FUNCTION
-    ------------------------------------ */
     async function runSync() {
       const params = new URLSearchParams(window.location.search);
       if (params.get("key") !== SECRET) {
@@ -39,51 +33,51 @@
         return;
       }
 
-      document.body.innerHTML = "<p>Fetching TikTok…</p>";
+      document.body.innerHTML = "<p>Fetching URLBird…</p>";
 
       try {
         /* ------------------------------------
-           1) Fetch TikTok HTML through proxy
+           1) Fetch URLBird HTML
         ------------------------------------ */
         const response = await fetch(
-          "https://tiktok-proxy.daniel-g-dicker.workers.dev"
+          "https://urlebird.com/user/repsscentral_/"
         );
-
         const html = await response.text();
 
         /* ------------------------------------
-           2) Extract SIGI_STATE script
+           2) Extract video IDs
+           URLBird structure:
+           <a href="/video/7339481234567890123/">
         ------------------------------------ */
-        const sigiMatch = html.match(
-          /<script id="SIGI_STATE"[^>]*>(.*?)<\/script>/
-        );
+        const videoMatches = [...html.matchAll(/\/video\/(\d+)\//g)];
+        const videoIDs = [...new Set(videoMatches.map(m => m[1]))];
 
-        if (!sigiMatch) {
-          document.body.innerHTML = "<p>Failed to parse TikTok page.</p>";
-          return;
-        }
-
-        const sigi = JSON.parse(sigiMatch[1]);
-
-        /* ------------------------------------
-           3) Extract video objects
-        ------------------------------------ */
-        const videos = Object.values(sigi.ItemModule || {});
-
-        if (!videos.length) {
+        if (!videoIDs.length) {
           document.body.innerHTML = "<p>No videos found.</p>";
           return;
         }
 
+        document.body.innerHTML = `<p>Found ${videoIDs.length} videos…</p>`;
+
         /* ------------------------------------
-           4) Upload to Firestore
+           3) Sync each video
         ------------------------------------ */
-        for (let v of videos) {
+        for (let vid of videoIDs) {
+          const videoPage = await fetch("https://urlebird.com/video/" + vid + "/");
+          const videoHTML = await videoPage.text();
+
+          /* Extract thumbnail from og:image */
+          const thumbMatch = videoHTML.match(
+            /property="og:image" content="(.*?)"/
+          );
+
+          const thumbnail = thumbMatch ? thumbMatch[1] : "";
+
           await setDoc(
-            doc(db, "tiktok_videos", v.id),
+            doc(db, "tiktok_videos", vid),
             {
-              thumbnail: v.cover,
-              videoUrl: v.video.playAddr,
+              thumbnail: thumbnail,
+              videoUrl: "https://www.tiktok.com/@repsscentral_/video/" + vid,
               createdAt: Date.now(),
               assigned: false
             },
@@ -95,9 +89,7 @@
 
       } catch (err) {
         document.body.innerHTML =
-          "<pre style='white-space: pre-wrap;'>" +
-          err.toString() +
-          "</pre>";
+          "<pre style='white-space: pre-wrap;'>" + err.toString() + "</pre>";
       }
     }
 
