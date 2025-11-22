@@ -20,11 +20,11 @@ db.settings({
   ignoreUndefinedProperties: true
 });
 
-// URLBird URL
+// URLBird profile URL
 const PROFILE_URL = "https://urlebird.com/user/repsscentral_/";
 
 async function run() {
-  console.log("Fetching URLBird…");
+  console.log("Fetching profile...");
   const response = await fetch(PROFILE_URL);
   const html = await response.text();
 
@@ -34,18 +34,17 @@ async function run() {
   const links = [...doc.querySelectorAll("a")];
   const videoIDs = links
     .map(a => {
-      const match = a.href.match(/\\/video\\/(\\d+)\\//);
+      const match = a.href.match(/\/video\/(\d+)\//);
       return match ? match[1] : null;
     })
     .filter(Boolean);
 
   const uniqueIDs = [...new Set(videoIDs)];
-
-  console.log(`Found ${uniqueIDs.length} videos.`);
+  console.log(`Found ${uniqueIDs.length} videos`);
 
   for (let id of uniqueIDs) {
     try {
-      const videoPage = await fetch("https://urlebird.com/video/" + id + "/");
+      const videoPage = await fetch(`https://urlebird.com/video/${id}/`);
       const videoHTML = await videoPage.text();
 
       const vmDom = new JSDOM(videoHTML);
@@ -57,7 +56,7 @@ async function run() {
       await db.collection("tiktok_videos").doc(id).set(
         {
           thumbnail,
-          videoUrl: "https://www.tiktok.com/@repsscentral_/video/" + id,
+          videoUrl: `https://www.tiktok.com/@repsscentral_/video/${id}`,
           createdAt: Date.now(),
           assigned: false,
         },
@@ -65,8 +64,9 @@ async function run() {
       );
 
       console.log("Synced:", id);
+
     } catch (err) {
-      console.log("Error syncing", id, err);
+      console.log("Failed:", id, err);
     }
   }
 
