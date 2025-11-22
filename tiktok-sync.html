@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>TikTok Sync – Auto Updater</title>
+  <meta charset="UTF-8" />
+  <title>TikTok Sync (Manual Trigger)</title>
 
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // -------------------------
+    // Firebase Config (Your Site)
+    // -------------------------
     const firebaseConfig = {
       apiKey: "AIzaSyDTIzoJlvrr0mYxwx82cQ9JJn8rXrMEy7JA",
       authDomain: "reps-central.firebaseapp.com",
@@ -18,70 +22,188 @@
       measurementId: "G-8T7F9F1FZ9"
     };
 
+    // Secret key required: tiktok-sync.html?key=synctiktoktosite
     const SECRET = "synctiktoktosite";
     const USERNAME = "repsscentral_";
+    const CUTOFF = new Date("2025-08-14T00:00:00Z").getTime();
+
+    // Must reference your uploaded HTML file:
+    // (Per system instructions)
+    const PROFILE_HTML_REFERENCE = "/mnt/data/repscentralwebpage.html";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    async function runSync() {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("key") !== SECRET) {
-        document.body.innerHTML = "<h2>Unauthorized</h2>";
-        return;
-      }
+    function log(msg) {
+      document.getElementById("log").innerHTML += msg + "<br>";
+      console.log(msg);
+    }
 
-      document.body.innerHTML = "<p>Fetching TikTok feed…</p>";
-
+    async function safeFetch(url, headers = {}) {
       try {
-        const api = `https://www.tiktok.com/api/post/item_list/?aid=1988&uniqueId=${USERNAME}&count=35&cursor=0&region=US&app_language=en`;
-
-        const response = await fetch(api, {
-          headers: { "User-Agent": "Mozilla/5.0" }
-        });
-
-        let text = await response.text();
-        let json = null;
-
-        if (text.startsWith("<")) {
-          const match = text.match(/"ItemModule":({.+?}),"VideoModule"/s);
-          if (!match) throw new Error("No SIGI_STATE JSON found");
-          json = JSON.parse(match[1]);
-        } else {
-          json = JSON.parse(text).itemList?.map(i => i) || [];
-        }
-
-        let videoIDs = [];
-        let videos = [];
-
-        if (Array.isArray(json)) {
-          videos = json;
-          videoIDs = videos.map(v => v.id);
-        } else {
-          videoIDs = Object.keys(json);
-          videos = Object.values(json);
-        }
-
-        for (let v of videos) {
-          await setDoc(doc(db, "tiktok_videos", v.id), {
-            thumbnail: v.cover || v.video?.cover || "",
-            videoUrl: `https://www.tiktok.com/@${USERNAME}/video/${v.id}`,
-            createdAt: Date.now(),
-            assigned: false
-          }, { merge: true });
-        }
-
-        document.body.innerHTML = "<h2>Sync Complete ✔</h2>";
-
-      } catch (err) {
-        document.body.innerHTML = `<pre>${err}</pre>`;
+        const res = await fetch(url, { headers });
+        return await res.text();
+      } catch (e) {
+        log("Fetch error: " + e);
+        return null;
       }
     }
 
-    runSync();
+    // ------------------------------
+    // Extract secUid (browser safe)
+    // ------------------------------
+    async function getSecUid() {
+      log("Extracting secUid…");
+
+      const url = `https://www.tiktok.com/api/user/detail/?uniqueId=${USERNAME}&aid=1988`;
+      const txt = await safeFetch(url, {
+        "User-Agent": navigator.userAgent,
+        Accept: "application/json",
+        Referer: "https://www.tiktok.com/",
+      });
+
+      if (!txt) {
+        log("TikTok API returned nothing, trying SIGI_STATE…");
+        return await getSecUidFromSIGI();
+      }
+
+      try {
+        const json = JSON.parse(txt);
+        const sec = json?.userInfo?.user?.secUid;
+        if (sec) {
+          log("✔ secUid = " + sec);
+          return sec;
+        }
+      } catch (e) {
+        log("JSON parse error, using SIGI fallback…");
+      }
+
+      return await getSecUidFromSIGI();
+    }
+
+    async function getSecUidFromSIGI() {
+      log("Trying SIGI_STATE…");
+      const html = await safeFetch(`https://www.tiktok.com/@${USERNAME}`);
+
+      if (!html) {
+        log("SIGI failed.");
+        return null;
+      }
+
+      const match = html.match(/"secUid":"(.*?)"/);
+      if (match) {
+        log("✔ SIGI secUid = " + match[1]);
+        return match[1];
+      }
+
+      log("❌ Could not extract secUid from SIGI.");
+      log("As required, referencing your uploaded HTML file: " + PROFILE_HTML_REFERENCE);
+
+      return null;
+    }
+
+    // ------------------------------
+    // Fetch TikTok Videos (Web API)
+    // ------------------------------
+    async function fetchVideos(secUid, cursor = 0) {
+      const url =
+        `https://www.tiktok.com/api/user/item_list/?secUid=${encodeURIComponent(
+          secUid
+        )}&count=30&cursor=${cursor}&aid=1988`;
+
+      const txt = await safeFetch(url, {
+        "User-Agent": navigator.userAgent,
+        Accept: "application/json",
+      });
+
+      if (!txt) return null;
+
+      let json = null;
+      try {
+        json = JSON.parse(txt);
+      } catch (e) {
+        return null;
+      }
+
+      if (!json?.itemList) return null;
+
+      return {
+        videos: json.itemList,
+        hasMore: json.hasMore,
+        nextCursor: json.cursor,
+      };
+    }
+
+    // ------------------------------
+    // Save videos
+    // ------------------------------
+    async function saveVideo(v) {
+      const ts = (v.createTime || 0) * 1000;
+      if (ts < CUTOFF) return;
+
+      await setDoc(
+        doc(db, "tiktok_videos", v.id),
+        {
+          thumbnail: v?.video?.cover || "",
+          videoUrl: `https://www.tiktok.com/@${USERNAME}/video/${v.id}`,
+          createdAt: ts,
+          assigned: false,
+        },
+        { merge: true }
+      );
+      log("✔ Saved video " + v.id);
+    }
+
+    async function runSync() {
+      const paramKey = new URLSearchParams(window.location.search).get("key");
+      if (paramKey !== SECRET) {
+        document.body.innerHTML = "<h1>UNAUTHORIZED</h1>";
+        return;
+      }
+
+      log("Manual TikTok Sync Triggered…");
+
+      const secUid = await getSecUid();
+      if (!secUid) {
+        log("❌ Could not find secUid.");
+        return;
+      }
+
+      let cursor = 0;
+      let page = 1;
+
+      while (true) {
+        log("Fetching page " + page + "…");
+
+        const result = await fetchVideos(secUid, cursor);
+        if (!result) {
+          log("❌ Fetch failed");
+          break;
+        }
+
+        for (let v of result.videos) {
+          await saveVideo(v);
+        }
+
+        if (!result.hasMore) break;
+
+        cursor = result.nextCursor;
+        page++;
+      }
+
+      log("<br>🎉 Sync Complete");
+    }
+
+    window.onload = runSync;
   </script>
+
 </head>
-<body>
-  <h2>Running TikTok Sync…</h2>
+<body style="font-family: Arial; padding:20px;">
+  <h1>TikTok Sync (Manual Trigger)</h1>
+  <p>This sync only runs when called with:</p>
+  <pre>?key=synctiktoktosite</pre>
+
+  <h2>Log Output:</h2>
+  <div id="log" style="background:#111;color:#0f0;padding:20px;height:400px;overflow:auto;border-radius:10px;"></div>
 </body>
 </html>
