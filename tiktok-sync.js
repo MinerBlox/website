@@ -12,7 +12,13 @@ admin.initializeApp({
   }),
 });
 
+// Firestore NAM5 fix
 const db = admin.firestore();
+db.settings({
+  host: "firestore.googleapis.com",
+  ssl: true,
+  ignoreUndefinedProperties: true
+});
 
 // URLBird URL
 const PROFILE_URL = "https://urlebird.com/user/repsscentral_/";
@@ -22,15 +28,13 @@ async function run() {
   const response = await fetch(PROFILE_URL);
   const html = await response.text();
 
-  // Parse HTML
   const dom = new JSDOM(html);
   const doc = dom.window.document;
 
-  // Extract video IDs
   const links = [...doc.querySelectorAll("a")];
   const videoIDs = links
     .map(a => {
-      const match = a.href.match(/\/video\/(\d+)\//);
+      const match = a.href.match(/\\/video\\/(\\d+)\\//);
       return match ? match[1] : null;
     })
     .filter(Boolean);
@@ -60,7 +64,7 @@ async function run() {
         { merge: true }
       );
 
-      console.log("Synced video:", id);
+      console.log("Synced:", id);
     } catch (err) {
       console.log("Error syncing", id, err);
     }
