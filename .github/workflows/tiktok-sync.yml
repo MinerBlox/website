@@ -3,7 +3,7 @@ name: TikTok Auto Sync
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"   # every 10 minutes
+    - cron: "*/10 * * * *"
 
 jobs:
   sync:
@@ -19,12 +19,12 @@ jobs:
         node-version: 18
 
     - name: Install deps
-      run: npm install firebase-admin node-fetch jsdom @google-cloud/firestore
+      run: npm install node-fetch @google-cloud/firestore
 
     - name: Run TikTok Sync
+      continue-on-error: false
       env:
         FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
         FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-        FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
       run: node tiktok-sync.js
