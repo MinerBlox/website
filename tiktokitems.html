@@ -1,99 +1,70 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 <head>
-<meta charset='UTF-8'>
-<title>TikTok Items</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, setDoc } 
-  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
-  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-const firebaseConfig = { /* same config */ };
-
-const ADMIN_UID = "Z9rgul3dEUONsJCcjoK51aNgHQo2";
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-let currentVideoID = null;
-
-onAuthStateChanged(auth, user => {
-  if (user && user.uid === ADMIN_UID) {
-    document.body.classList.add("admin-mode");
-  } else {
-    document.body.classList.remove("admin-mode");
-  }
-});
-
-async function loadGrid() {
-  const ref = collection(db, "tiktok_videos");
-  onSnapshot(ref, snap => {
-    const grid = document.getElementById("videoGrid");
-    grid.innerHTML = "";
-    let videos = [];
-    snap.forEach(docu => videos.push({ id: docu.id, ...docu.data() }));
-    videos.sort((a,b) => b.createdAt - a.createdAt);
-    videos.forEach(v => {
-      grid.innerHTML += `<div onclick="openViewer('${v.id}')" class='cursor-pointer'>
-        <img src="${v.thumbnail}" class="rounded-xl shadow-lg border" />
-      </div>`;
-    });
-  });
-}
-
-window.openViewer = async function(id) {
-  currentVideoID = id;
-  document.getElementById("viewer").classList.remove("hidden");
-  document.getElementById("videoFrame").innerHTML = `
-    <blockquote class="tiktok-embed" data-video-id="${id}"></blockquote>
-    <script async src="https://www.tiktok.com/embed.js"><\/script>`;
-  loadAssignedItems(id);
-}
-
-async function loadAssignedItems(videoId) {
-  const box = document.getElementById("itemsBox");
-  box.innerHTML = `<p class="text-gray-500 animate-pulse">Checking for items…</p>`;
-  const ref = doc(db, "tiktok_video_items", videoId);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists() || !(snap.data().items) || snap.data().items.length === 0) {
-    box.innerHTML = `
-      <div class="text-center py-6">
-        <div class='animate-bounce text-6xl mb-3'>🛒</div>
-        <p class='text-xl font-semibold text-gray-700'>Detecting Products</p>
-        <p class='text-gray-500'>Come back later...</p>
-      </div>`;
-    return;
-  }
-
-  let html = "";
-  for (const itemId of snap.data().items) {
-    const itemRef = doc(db, "tiktokitems", itemId);
-    const itemSnap = await getDoc(itemRef);
-    if (itemSnap.exists()) {
-      const d = itemSnap.data();
-      html += `<div class="p-3 border rounded-xl mb-4 shadow-sm bg-white">
-        <img src="${d.image}" class="w-24 rounded mb-2"/>
-        <p class="font-bold">${d.title}</p>
-        <p class="text-sm text-gray-700">${d.price} USD</p>
-        <a class="text-blue-500 underline" href="${d.url}" target="_blank">Buy</a>
-      </div>`;
-    }
-  }
-  box.innerHTML = html;
-}
-
-loadGrid();
-</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok Import</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "primary-dark": "#111827",
+            accent: "#00AEEF",
+          },
+          fontFamily: { sans: ["Inter", "sans-serif"] }
+        }
+      }
+    };
+  </script>
 </head>
-<body>
-<div id="videoGrid" class="grid grid-cols-3 gap-4 p-4"></div>
-<div id="viewer" class="hidden p-4">
-  <div id="videoFrame"></div>
-  <div id="itemsBox" class="mt-4"></div>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-4">
+
+<header class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-4 pt-4"
+        style="background: linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%);">
+  <div class="flex items-center space-x-3">
+    <svg onclick="history.back()" class="w-8 h-8 text-accent cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+    </svg>
+    <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png"
+         class="h-10 cursor-pointer" />
+  </div>
+
+  <a href="tiktok-import.html"
+     class="px-4 py-2 bg-accent text-white rounded-xl shadow-lg font-semibold hover:bg-opacity-90 transition">
+     ADMIN
+  </a>
+</header>
+
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white shadow-xl rounded-2xl p-6 mb-10 border border-gray-200">
+    <h2 class="text-2xl font-bold text-primary-dark mb-4">Import TikTok Video</h2>
+    <input id="tiktokUrl" placeholder="Paste TikTok video URL..."
+           class="w-full p-3 border rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-accent" />
+
+    <button onclick="alert('Import logic placeholder')"
+            class="w-full py-3 bg-accent text-white rounded-xl font-semibold shadow hover:bg-opacity-90 transition">
+      Import Video
+    </button>
+  </div>
+
+  <h3 class="text-xl font-bold text-primary-dark mb-4">Preview Grid</h3>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Example card -->
+    <div class="bg-white shadow-md border rounded-xl p-3 hover:scale-[1.02] transition cursor-pointer">
+      <div class="w-full h-48 bg-gray-200 rounded-xl overflow-hidden mb-3">
+        <img src="https://placehold.co/600x800" class="w-full h-full object-cover" />
+      </div>
+      <h4 class="font-semibold text-primary-dark truncate">Example TikTok Video</h4>
+      <p class="text-sm text-gray-500">Author Name</p>
+      <span class="status-pill status-available mt-2 inline-block text-xs px-3 py-1 rounded-full bg-green-500 text-white">
+        Not Assigned
+      </span>
+    </div>
+  </div>
 </div>
+
 </body>
 </html>
