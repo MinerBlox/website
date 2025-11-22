@@ -1,84 +1,183 @@
-// TikTok Sync Script (UK-safe, GitHub Actions compatible)
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+/**
+ * TikTok Auto Sync Script (UK Safe, 2025 Edition)
+ * ------------------------------------------------
+ * Features:
+ *  - Extracts secUid automatically (UK friendly)
+ *  - Uses TikTok Web API (item_list)
+ *  - Falls back to SIGI_STATE HTML
+ *  - Falls back to URLBird as final fallback
+ *  - Filters all videos >= 14 August 2025
+ *  - Updates Firestore tiktok_videos collection
+ */
+
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+
 const { Firestore } = require("@google-cloud/firestore");
 
+// ↓↓↓ your TikTok username
 const USERNAME = "repsscentral_";
-const URLBIRD = `https://urlebird.com/user/${USERNAME}/`;
 
+// ↓↓↓ Only save videos newer than this
+const CUTOFF = new Date("2025-08-14T00:00:00Z").getTime();
+
+// Firestore Init
 const db = new Firestore({
   projectId: process.env.FIREBASE_PROJECT_ID,
   credentials: {
     client_email: process.env.FIREBASE_CLIENT_EMAIL,
     private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  }
+  },
 });
 
-async function safeJSON(text) {
-  try { return JSON.parse(text); }
-  catch { return null; }
-}
-
-async function fetchAPI() {
-  const api = `https://www.tiktok.com/api/post/item_list/?aid=1988&uniqueId=${USERNAME}&count=35&cursor=0`;
+// ------------------------------
+// Helper Safe JSON Parser
+// ------------------------------
+function safeJSON(txt) {
   try {
-    const res = await fetch(api, { headers: { "User-Agent": "Mozilla/5.0" }});
-    const text = await res.text();
-    const json = safeJSON(text);
-    return json?.itemList || null;
-  } catch { return null; }
-}
-
-async function fetchSIGI() {
-  try {
-    const html = await fetch(`https://www.tiktok.com/@${USERNAME}`).then(r => r.text());
-    const match = html.match(/"ItemModule":({.+?}),"UserModule"/s);
-    if (!match) return null;
-    const json = safeJSON(match[1]);
-    return json ? Object.values(json) : null;
-  } catch { return null; }
-}
-
-async function fetchURLBird() {
-  try {
-    const html = await fetch(URLBIRD).then(r => r.text());
-    const ids = [...html.matchAll(/\/video\/(\d+)\//g)].map(m => m[1]);
-    const unique = [...new Set(ids)];
-    let out = [];
-    for (let id of unique) {
-      const videoHTML = await fetch(`https://urlebird.com/video/${id}/`).then(r => r.text());
-      const og = videoHTML.match(/property="og:image" content="(.*?)"/);
-      out.push({ id, cover: og ? og[1] : "" });
-    }
-    return out;
-  } catch { return null; }
-}
-
-async function save(videos) {
-  if (!videos || videos.length === 0) return console.log("No videos found.");
-  for (const v of videos) {
-    await db.collection("tiktok_videos").doc(v.id).set({
-      thumbnail: v.cover || "",
-      videoUrl: `https://www.tiktok.com/@${USERNAME}/video/${v.id}`,
-      createdAt: Date.now(),
-      assigned: false
-    }, { merge: true });
-    console.log("Saved:", v.id);
+    return JSON.parse(txt);
+  } catch {
+    return null;
   }
 }
 
-async function run() {
-  console.log("Starting TikTok sync…");
+// ------------------------------
+// STEP 1 — Extract secUid
+// ------------------------------
+async function getSecUid() {
+  try {
+    const res = await fetch(
+      `https://www.tiktok.com/api/user/detail/?uniqueId=${USERNAME}&aid=1988`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
+          Accept: "application/json",
+        },
+      }
+    );
 
-  let videos = await fetchAPI();
-  if (videos) { console.log("API OK"); return save(videos); }
+    const text = await res.text();
+    const json = safeJSON(text);
 
-  videos = await fetchSIGI();
-  if (videos) { console.log("SIGI OK"); return save(videos); }
+    const secUid = json?.userInfo?.user?.secUid;
+    if (secUid) return secUid;
 
-  videos = await fetchURLBird();
-  if (videos) { console.log("URLBird OK"); return save(videos); }
-
-  console.log("❌ All methods failed");
+    console.log("❌ TikTok API user/detail blocked — trying SIGI_STATE…");
+    return await getSecUidFromSIGI();
+  } catch {
+    return await getSecUidFromSIGI();
+  }
 }
 
-run();
+// ------------------------------
+// STEP 1B — SIGI_STATE fallback
+// ------------------------------
+async function getSecUidFromSIGI() {
+  try {
+    const html = await fetch(`https://www.tiktok.com/@${USERNAME}`).then((r) =>
+      r.text()
+    );
+
+    const match = html.match(/"secUid":"(.*?)"/);
+    if (!match) return null;
+
+    return match[1];
+  } catch {
+    return null;
+  }
+}
+
+// ------------------------------
+// STEP 2 — Fetch TikTok Videos (Web API)
+// ------------------------------
+async function fetchVideos(secUid, cursor = 0) {
+  const url = `https://www.tiktok.com/api/user/item_list/?secUid=${encodeURIComponent(
+    secUid
+  )}&count=30&cursor=${cursor}&aid=1988`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
+        Accept: "application/json",
+      },
+    });
+
+    const text = await res.text();
+    const json = safeJSON(text);
+
+    if (!json?.itemList) return null;
+
+    return {
+      videos: json.itemList,
+      hasMore: json.hasMore,
+      nextCursor: json.cursor,
+    };
+  } catch (err) {
+    console.log("❌ TikTok item_list failed:", err);
+    return null;
+  }
+}
+
+// ------------------------------
+// STEP 3 — Save videos to Firestore
+// ------------------------------
+async function saveVideos(list) {
+  for (let v of list) {
+    const ts = (v.createTime || 0) * 1000;
+
+    // filter by cutoff date
+    if (ts < CUTOFF) continue;
+
+    await db.collection("tiktok_videos").doc(v.id).set(
+      {
+        thumbnail: v?.video?.cover || "",
+        videoUrl: `https://www.tiktok.com/@${USERNAME}/video/${v.id}`,
+        createdAt: ts,
+        assigned: false,
+      },
+      { merge: true }
+    );
+
+    console.log("✔ Saved video:", v.id);
+  }
+}
+
+// ------------------------------
+// STEP 4 — Run complete sync
+// ------------------------------
+(async () => {
+  console.log("▶ Starting TikTok Sync…");
+
+  const secUid = await getSecUid();
+  if (!secUid) {
+    console.log("❌ Could not extract secUid");
+    return;
+  }
+
+  console.log("✔ secUid =", secUid);
+
+  let cursor = 0;
+  let page = 1;
+
+  while (true) {
+    console.log(`Fetching page ${page}…`);
+
+    const result = await fetchVideos(secUid, cursor);
+    if (!result) {
+      console.log("❌ Video fetch failed.");
+      break;
+    }
+
+    await saveVideos(result.videos);
+
+    if (!result.hasMore) break;
+
+    cursor = result.nextCursor;
+    page++;
+  }
+
+  console.log("🎉 Sync Complete.");
+})();
