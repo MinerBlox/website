@@ -1,13 +1,14 @@
-import fetch from "node-fetch";
-import admin from "firebase-admin";
-import { JSDOM } from "jsdom";
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const admin = require("firebase-admin");
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
 
 // Initialize Firebase Admin
 admin.initializeApp({
   credential: admin.credential.cert({
     project_id: process.env.FIREBASE_PROJECT_ID,
     client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\n/g, "\n"),
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
   }),
 });
 
