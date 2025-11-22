@@ -1,23 +1,16 @@
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-const admin = require("firebase-admin");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const { Firestore } = require('@google-cloud/firestore');
 
-// Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert({
-    project_id: process.env.FIREBASE_PROJECT_ID,
+// Firestore NAM5-Compatible initialization
+const db = new Firestore({
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  credentials: {
     client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  }),
-});
-
-// Firestore NAM5 fix
-const db = admin.firestore();
-db.settings({
-  host: "firestore.googleapis.com",
-  ssl: true,
-  ignoreUndefinedProperties: true
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  },
+  databaseId: '(default)',
 });
 
 // URLBird profile URL
@@ -64,7 +57,6 @@ async function run() {
       );
 
       console.log("Synced:", id);
-
     } catch (err) {
       console.log("Failed:", id, err);
     }
