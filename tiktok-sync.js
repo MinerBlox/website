@@ -1,104 +1,69 @@
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
-const { Firestore } = require('@google-cloud/firestore');
-
-// ---------- DEBUG LOGGING ----------
-console.log("=== DEBUG: ENVIRONMENT VARIABLES ===");
-console.log("FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
-console.log("FIREBASE_CLIENT_EMAIL:", process.env.FIREBASE_CLIENT_EMAIL);
-console.log("FIREBASE_PRIVATE_KEY starts with:", process.env.FIREBASE_PRIVATE_KEY?.slice(0, 30));
-console.log("====================================");
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const { Firestore } = require("@google-cloud/firestore");
 
 // Firestore NAM5-Compatible initialization
-console.log("Initializing Firestore client...");
-
 const db = new Firestore({
   projectId: process.env.FIREBASE_PROJECT_ID,
   credentials: {
     client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
   },
-  databaseId: '(default)',
+  databaseId: "(default)",
 });
 
-console.log("Firestore client initialized ✓");
+// TikTok user
+const USERNAME = "repsscentral_";
 
-// URLBird profile URL
-const PROFILE_URL = "https://urlebird.com/user/repsscentral_/";
+// TikTok API URL (web feed)
+const FEED_URL = `https://www.tiktok.com/api/post/item_list/?aid=1988&uniqueId=${USERNAME}&count=30`;
 
 async function run() {
-  console.log("Fetching profile HTML from URLBird…");
+  console.log("Fetching TikTok feed…");
 
-  let response;
-  try {
-    response = await fetch(PROFILE_URL);
-  } catch (e) {
-    console.error("❌ Failed to fetch URLBird:", e);
+  const response = await fetch(FEED_URL, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
+      Referer: "https://www.tiktok.com/",
+    },
+  });
+
+  console.log("TikTok status:", response.status);
+
+  if (!response.ok) {
+    console.error("Failed to fetch TikTok:", await response.text());
     return;
   }
 
-  console.log("URLBird response status:", response.status);
+  const json = await response.json();
 
-  const html = await response.text();
-
-  console.log("HTML length received:", html.length);
-
-  const dom = new JSDOM(html);
-  const doc = dom.window.document;
-
-  const links = [...doc.querySelectorAll("a")];
-  console.log("Total <a> links found:", links.length);
-
-  const videoIDs = links
-    .map(a => {
-      const match = a.href.match(/\/video\/(\d+)\//);
-      return match ? match[1] : null;
-    })
-    .filter(Boolean);
-
-  console.log("Extracted video IDs:", videoIDs);
-
-  const uniqueIDs = [...new Set(videoIDs)];
-  console.log(`Unique videos found: ${uniqueIDs.length}`);
-
-  for (let id of uniqueIDs) {
-    console.log(`Processing video ${id}…`);
-
-    try {
-      const videoPage = await fetch(`https://urlebird.com/video/${id}/`);
-      const videoHTML = await videoPage.text();
-
-      console.log(`Fetched video page for ${id}, length:`, videoHTML.length);
-
-      const vmDom = new JSDOM(videoHTML);
-      const vmDoc = vmDom.window.document;
-
-      const ogImage = vmDoc.querySelector('meta[property="og:image"]');
-      const thumbnail = ogImage ? ogImage.content : "";
-
-      console.log("Thumbnail:", thumbnail);
-
-      console.log("Attempting Firestore write…");
-
-      await db.collection("tiktok_videos").doc(id).set(
-        {
-          thumbnail,
-          videoUrl: `https://www.tiktok.com/@repsscentral_/video/${id}`,
-          createdAt: Date.now(),
-          assigned: false,
-        },
-        { merge: true }
-      );
-
-      console.log("🔥 Firestore write SUCCESS for:", id);
-
-    } catch (err) {
-      console.log("❌ Firestore write FAILED for", id, err);
-    }
+  if (!json.itemList || json.itemList.length === 0) {
+    console.log("No videos found.");
+    return;
   }
 
-  console.log("=== DONE SYNCING ===");
+  console.log(`Found ${json.itemList.length} videos.`);
+
+  for (const item of json.itemList) {
+    const id = item.id;
+    const thumbnail = item.video.cover;
+    const url = `https://www.tiktok.com/@${USERNAME}/video/${id}`;
+
+    console.log("Writing:", id);
+
+    await db.collection("tiktok_videos").doc(id).set(
+      {
+        thumbnail,
+        videoUrl: url,
+        createdAt: Date.now(),
+        assigned: false,
+      },
+      { merge: true }
+    );
+  }
+
+  console.log("DONE ✓");
 }
 
 run();
