@@ -2,16 +2,12 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>TikTok Sync</title>
+  <title>TikTok Sync – Auto Updater</title>
 
-  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getFirestore, doc, setDoc
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    /* FIREBASE CONFIG */
     const firebaseConfig = {
       apiKey: "AIzaSyDTIzoJlvrr0mYxwx82cQ9JJn8rXrMEy7JA",
       authDomain: "reps-central.firebaseapp.com",
@@ -23,6 +19,8 @@
     };
 
     const SECRET = "synctiktoktosite";
+    const USERNAME = "repsscentral_";
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -33,69 +31,55 @@
         return;
       }
 
-      document.body.innerHTML = "<p>Fetching URLBird…</p>";
+      document.body.innerHTML = "<p>Fetching TikTok feed…</p>";
 
       try {
-        /* ------------------------------------
-           1) Fetch URLBird HTML
-        ------------------------------------ */
-        const response = await fetch(
-          "https://urlebird.com/user/repsscentral_/"
-        );
-        const html = await response.text();
+        const api = `https://www.tiktok.com/api/post/item_list/?aid=1988&uniqueId=${USERNAME}&count=35&cursor=0&region=US&app_language=en`;
 
-        /* ------------------------------------
-           2) Extract video IDs
-           URLBird structure:
-           <a href="/video/7339481234567890123/">
-        ------------------------------------ */
-        const videoMatches = [...html.matchAll(/\/video\/(\d+)\//g)];
-        const videoIDs = [...new Set(videoMatches.map(m => m[1]))];
+        const response = await fetch(api, {
+          headers: { "User-Agent": "Mozilla/5.0" }
+        });
 
-        if (!videoIDs.length) {
-          document.body.innerHTML = "<p>No videos found.</p>";
-          return;
+        let text = await response.text();
+        let json = null;
+
+        if (text.startsWith("<")) {
+          const match = text.match(/"ItemModule":({.+?}),"VideoModule"/s);
+          if (!match) throw new Error("No SIGI_STATE JSON found");
+          json = JSON.parse(match[1]);
+        } else {
+          json = JSON.parse(text).itemList?.map(i => i) || [];
         }
 
-        document.body.innerHTML = `<p>Found ${videoIDs.length} videos…</p>`;
+        let videoIDs = [];
+        let videos = [];
 
-        /* ------------------------------------
-           3) Sync each video
-        ------------------------------------ */
-        for (let vid of videoIDs) {
-          const videoPage = await fetch("https://urlebird.com/video/" + vid + "/");
-          const videoHTML = await videoPage.text();
-
-          /* Extract thumbnail from og:image */
-          const thumbMatch = videoHTML.match(
-            /property="og:image" content="(.*?)"/
-          );
-
-          const thumbnail = thumbMatch ? thumbMatch[1] : "";
-
-          await setDoc(
-            doc(db, "tiktok_videos", vid),
-            {
-              thumbnail: thumbnail,
-              videoUrl: "https://www.tiktok.com/@repsscentral_/video/" + vid,
-              createdAt: Date.now(),
-              assigned: false
-            },
-            { merge: true }
-          );
+        if (Array.isArray(json)) {
+          videos = json;
+          videoIDs = videos.map(v => v.id);
+        } else {
+          videoIDs = Object.keys(json);
+          videos = Object.values(json);
         }
 
-        document.body.innerHTML = "<h2>Sync complete!</h2>";
+        for (let v of videos) {
+          await setDoc(doc(db, "tiktok_videos", v.id), {
+            thumbnail: v.cover || v.video?.cover || "",
+            videoUrl: `https://www.tiktok.com/@${USERNAME}/video/${v.id}`,
+            createdAt: Date.now(),
+            assigned: false
+          }, { merge: true });
+        }
+
+        document.body.innerHTML = "<h2>Sync Complete ✔</h2>";
 
       } catch (err) {
-        document.body.innerHTML =
-          "<pre style='white-space: pre-wrap;'>" + err.toString() + "</pre>";
+        document.body.innerHTML = `<pre>${err}</pre>`;
       }
     }
 
     runSync();
   </script>
-
 </head>
 <body>
   <h2>Running TikTok Sync…</h2>
