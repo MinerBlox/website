@@ -1,16 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>TikTok Items</title>
+<title>TikTok Videos</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.tailwindcss.com"></script>
+
 <script>
 tailwind.config = {
   theme: {
     extend: {
-      colors: { accent: "#00AEEF" }
+      colors: {
+        "primary-dark": "#111827",
+        "primary-light": "#FFFFFF",
+        accent: "#00AEEF",
+        subtle: "#E5E7EB",
+        "background-light": "#F8F8F8",
+      }
     }
   }
 }
@@ -18,14 +25,19 @@ tailwind.config = {
 
 <style>
 body { background:#f8f8f8; }
-.header-gradient { background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%); }
 
+.header-gradient {
+  background: linear-gradient(135deg, #ffffff 60%, #e0f7fa 100%);
+}
+
+/* TikTok thumbnail portrait ratio */
 .thumb-box {
   position: relative;
   width: 100%;
-  padding-top: 177.78%; /* 1080x1920 portrait ratio */
+  padding-top: 177.78%; /* 9:16 ratio */
   overflow: hidden;
   border-radius: 12px;
+  background:#e5e7eb;
 }
 .thumb-box img {
   position: absolute;
@@ -37,52 +49,65 @@ body { background:#f8f8f8; }
 </style>
 </head>
 
-<body class="p-6 bg-gray-100 font-sans">
+<body class="text-gray-800 font-sans min-h-screen">
 
-<!-- HEADER -->
-<header class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-6 pt-4">
-  <div onclick="location.href='index.html'" class="flex items-center space-x-3 cursor-pointer">
-    <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+<!-- SIDEBAR -->
+<div id="sidebar"
+     class="fixed top-0 left-0 h-full w-64 p-6 shadow-2xl transform -translate-x-full transition-transform duration-300 z-50 bg-white border-r border-subtle">
+
+  <h3 class="text-xl font-bold text-accent mb-6">Navigation</h3>
+
+  <nav class="flex flex-col space-y-3">
+    <button onclick="navigate('home')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Home</button>
+    <button onclick="navigate('data')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Spreadsheet</button>
+    <button onclick="navigate('link-converter')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Link Converter</button>
+    <button onclick="navigate('trusted-sellers')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Trusted Sellers</button>
+    <button onclick="navigate('tiktok-items')" class="text-left py-2 px-3 rounded-lg font-medium bg-gray-200">TikTok Videos</button>
+  </nav>
+</div>
+
+<div id="sidebarBackdrop"
+     onclick="toggleSidebar()"
+     class="hidden fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+
+
+<!-- MAIN CONTAINER -->
+<div class="max-w-7xl mx-auto p-4 sm:p-8">
+
+  <!-- HEADER -->
+  <header class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-4 sm:px-8 pt-4">
+    <svg onclick="toggleSidebar()" class="w-8 h-8 text-accent cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
     </svg>
-    <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10"/>
+
+    <img onclick="navigate('home')"
+         src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png"
+         class="h-10 cursor-pointer">
+
+    <button onclick="openAdmin()" class="text-gray-700">Admin?</button>
+  </header>
+
+  <!-- ADMIN MODAL -->
+  <div id="adminModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-xl w-72">
+      <h2 class="text-lg font-bold mb-3">Admin Unlock</h2>
+      <input id="adminPass" type="password" placeholder="Enter password..." class="w-full p-2 border rounded mb-4">
+      <button onclick="doAdminLogin()" class="bg-blue-500 text-white w-full py-2 rounded">Unlock</button>
+    </div>
   </div>
 
-  <div class="flex gap-3">
-    <button onclick="openLogin()" class="text-gray-600">Admin?</button>
-    <button id="logoutBtn" onclick="doLogout()" class="hidden text-red-600">Logout</button>
-  </div>
-</header>
+  <h1 class="text-3xl font-bold mb-6">TikTok Videos</h1>
 
+  <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-<!-- LOGIN MODAL -->
-<div id="loginModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
- <div class="bg-white p-6 rounded-xl w-72">
-   <h2 class="text-lg font-bold mb-3">Admin Login</h2>
-   <input id="loginEmail" placeholder="Email" class="w-full p-2 border rounded mb-2">
-   <input id="loginPass" type="password" placeholder="Password" class="w-full p-2 border rounded mb-3">
-   <button onclick="doLogin()" class="bg-blue-500 text-white w-full py-2 rounded mb-2">Login</button>
-   <button onclick="closeLogin()" class="text-center w-full text-sm">Cancel</button>
- </div>
 </div>
-
-
-<h1 class="text-2xl font-bold mb-4">TikTok Videos</h1>
-
-<!-- ADMIN PANEL -->
-<div id="adminPanel" class="hidden admin-only mb-4 flex gap-2">
-  <button id="bulkDeleteBtn" class="bg-red-500 text-white px-4 py-2 rounded">Delete Selected</button>
-</div>
-
-<!-- GRID -->
-<div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
 
 <!-- FIREBASE LOGIC -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getFirestore, collection, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey:"AIzaSyDTI2oJIvrtQmYxwz8t2CQ9JJn8r7kMEy7JA",
@@ -94,87 +119,70 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
-const auth = getAuth(app);
+const db = getFirestore(app);
 
-function openLogin(){ loginModal.classList.remove("hidden"); }
-function closeLogin(){ loginModal.classList.add("hidden"); }
+let isAdmin = false;
 
-async function doLogin(){
-  const email = loginEmail.value.trim();
-  const pass  = loginPass.value.trim();
+function openAdmin(){ adminModal.classList.remove("hidden"); }
+function closeAdmin(){ adminModal.classList.add("hidden"); }
 
-  /* TEST ADMIN OVERRIDE */
-  if(pass === "admin1234"){
-    window.fakeAdmin = true;
-    applyAdmin(true);
-    closeLogin();
-    return;
+window.doAdminLogin = () => {
+  if(adminPass.value === "admintest"){
+    isAdmin = true;
+    closeAdmin();
+  } else {
+    alert("Incorrect password.");
   }
-
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-    closeLogin();
-  } catch (e) {
-    alert("Login failed.");
-  }
-}
-
-function doLogout(){
-  window.fakeAdmin = false;
-  signOut(auth);
-}
-
-function applyAdmin(isAdmin){
-  logoutBtn.classList.toggle("hidden", !isAdmin);
-  document.querySelectorAll(".admin-only").forEach(el =>
-    el.classList.toggle("hidden", !isAdmin)
-  );
-}
-
-
-onAuthStateChanged(auth, user => {
-  let isAdmin = false;
-  if(user && user.email === "admin@repscentral.com") isAdmin = true;
-  if(window.fakeAdmin) isAdmin = true;
-  applyAdmin(isAdmin);
-});
-
-
-/* DELETE SELECTED */
-let selected = new Set();
-
-bulkDeleteBtn.onclick = async () => {
-  for(const id of selected){
-     await deleteDoc(doc(db, "tiktokvideos", id));
-  }
-  selected.clear();
 };
 
 
-/* LIVE VIDEO GRID */
+/* SIDEBAR NAVIGATION */
+window.toggleSidebar = () => {
+  const sb = document.getElementById('sidebar');
+  const bg = document.getElementById('sidebarBackdrop');
+  const closed = sb.classList.contains("-translate-x-full");
+
+  if(closed){
+    sb.classList.remove("-translate-x-full");
+    bg.classList.remove("hidden");
+  } else {
+    sb.classList.add("-translate-x-full");
+    bg.classList.add("hidden");
+  }
+};
+
+window.navigate = (p) => {
+  if(p === "home") location.href = "index.html";
+  if(p === "data") location.href = "products.html";
+  if(p === "link-converter") location.href = "link-converter.html";
+  if(p === "trusted-sellers") location.href = "trusted-sellers.html";
+  if(p === "tiktok-items") location.href = "tiktokitems (2).html";
+};
+
+
+/* LOAD VIDEOS */
+const grid = document.getElementById("videoGrid");
+
 onSnapshot(collection(db, "tiktokvideos"), snap => {
   grid.innerHTML = "";
 
-  snap.forEach(d => {
-    const data = d.data();
-    const id   = d.id;
+  snap.forEach(doc => {
+    const d = doc.data();
 
     grid.innerHTML += `
-      <div class="card p-3 cursor-pointer" onclick="location.href='tiktokvideo.html?id=${id}'">
-        <div class="thumb-box mb-2">
-          <img src="${data.thumbnailurl || ""}">
+      <div onclick="location.href='tiktokvideo.html?id=${doc.id}'"
+           class="bg-white shadow rounded-xl p-3 cursor-pointer hover:shadow-lg transition">
+
+        <div class="thumb-box mb-3">
+          <img src="${d.thumbnailurl || ""}">
         </div>
 
-        <div class="flex justify-between items-center">
-          <input type="checkbox" class="admin-only hidden"
-            onchange="this.checked ? selected.add('${id}') : selected.delete('${id}')">
-          <span class="text-gray-500 text-sm">${id}</span>
-        </div>
+        <div class="font-semibold text-gray-800">${d.name || "Untitled Video"}</div>
       </div>
     `;
   });
 });
+
 </script>
 
 </body>
