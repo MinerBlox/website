@@ -1,69 +1,88 @@
-
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
 <title>TikTok Items</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
   theme: {
     extend: {
-      colors: {
-        "primary-dark": "#111827",
-        accent: "#00AEEF",
-      },
-      fontFamily: { sans: ["Inter","sans-serif"] }
+      colors: { accent: "#00AEEF" }
     }
   }
 }
 </script>
+
 <style>
 body { background:#f8f8f8; }
 .header-gradient { background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%); }
-.card { background:white; border:1px solid #e5e7eb; border-radius:0.75rem; box-shadow:0 4px 6px rgba(0,0,0,0.05); }
+
+.thumb-box {
+  position: relative;
+  width: 100%;
+  padding-top: 177.78%; /* 1080x1920 portrait ratio */
+  overflow: hidden;
+  border-radius: 12px;
+}
+.thumb-box img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 </style>
+</head>
 
-</head><body class='p-6 font-sans'>
+<body class="p-6 bg-gray-100 font-sans">
 
-<header class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-4 sm:px-8 pt-4">
-  <div class="flex items-center space-x-3">
+<!-- HEADER -->
+<header class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-6 pt-4">
+  <div onclick="location.href='index.html'" class="flex items-center space-x-3 cursor-pointer">
     <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
     </svg>
-    <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10" />
+    <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10"/>
   </div>
-  <div class="flex items-center gap-4">
-    <button onclick="openLogin()" class="text-sm text-gray-600">Admin?</button>
-    <button id="logoutBtn" class="hidden text-red-500 text-sm" onclick="doLogout()">Logout</button>
+
+  <div class="flex gap-3">
+    <button onclick="openLogin()" class="text-gray-600">Admin?</button>
+    <button id="logoutBtn" onclick="doLogout()" class="hidden text-red-600">Logout</button>
   </div>
 </header>
 
 
-<!-- Login Modal -->
+<!-- LOGIN MODAL -->
 <div id="loginModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
- <div class="bg-white p-6 rounded-xl w-80">
-   <h2 class="text-lg font-bold mb-4">Admin Login</h2>
+ <div class="bg-white p-6 rounded-xl w-72">
+   <h2 class="text-lg font-bold mb-3">Admin Login</h2>
    <input id="loginEmail" placeholder="Email" class="w-full p-2 border rounded mb-2">
-   <input id="loginPass" type="password" placeholder="Password" class="w-full p-2 border rounded mb-4">
+   <input id="loginPass" type="password" placeholder="Password" class="w-full p-2 border rounded mb-3">
    <button onclick="doLogin()" class="bg-blue-500 text-white w-full py-2 rounded mb-2">Login</button>
-   <button onclick="closeLogin()" class="text-sm w-full">Cancel</button>
+   <button onclick="closeLogin()" class="text-center w-full text-sm">Cancel</button>
  </div>
 </div>
 
+
 <h1 class="text-2xl font-bold mb-4">TikTok Videos</h1>
 
+<!-- ADMIN PANEL -->
 <div id="adminPanel" class="hidden admin-only mb-4 flex gap-2">
   <button id="bulkDeleteBtn" class="bg-red-500 text-white px-4 py-2 rounded">Delete Selected</button>
 </div>
 
+<!-- GRID -->
 <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-<script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {getFirestore,collection,onSnapshot,deleteDoc,doc} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+<!-- FIREBASE LOGIC -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey:"AIzaSyDTI2oJIvrtQmYxwz8t2CQ9JJn8r7kMEy7JA",
@@ -71,58 +90,92 @@ const firebaseConfig = {
     projectId:"reps-central",
     storageBucket:"reps-central.firebasestorage.app",
     messagingSenderId:"812299387060",
-    appId:"1:812299387060:web:1c93d1e7bf30b65653d7e1",
-    measurementId:"G-87F79F1FZ9"
+    appId:"1:812299387060:web:1c93d1e7bf30b65653d7e1"
 };
-
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db  = getFirestore(app);
 const auth = getAuth(app);
 
-function openLogin(){document.getElementById("loginModal").classList.remove("hidden");}
-function closeLogin(){document.getElementById("loginModal").classList.add("hidden");}
+function openLogin(){ loginModal.classList.remove("hidden"); }
+function closeLogin(){ loginModal.classList.add("hidden"); }
 
 async function doLogin(){
- try {
-   await signInWithEmailAndPassword(auth,
-     document.getElementById("loginEmail").value,
-     document.getElementById("loginPass").value);
-   closeLogin();
- } catch(e) {
-   alert("Login failed");
- }
+  const email = loginEmail.value.trim();
+  const pass  = loginPass.value.trim();
+
+  /* TEST ADMIN OVERRIDE */
+  if(pass === "admin1234"){
+    window.fakeAdmin = true;
+    applyAdmin(true);
+    closeLogin();
+    return;
+  }
+
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    closeLogin();
+  } catch (e) {
+    alert("Login failed.");
+  }
 }
-function doLogout(){signOut(auth);}
+
+function doLogout(){
+  window.fakeAdmin = false;
+  signOut(auth);
+}
+
+function applyAdmin(isAdmin){
+  logoutBtn.classList.toggle("hidden", !isAdmin);
+  document.querySelectorAll(".admin-only").forEach(el =>
+    el.classList.toggle("hidden", !isAdmin)
+  );
+}
+
 
 onAuthStateChanged(auth, user => {
- const admin = !!user;
- document.getElementById("logoutBtn").classList.toggle("hidden", !admin);
- document.querySelectorAll(".admin-only").forEach(e => e.classList.toggle("hidden", !admin));
+  let isAdmin = false;
+  if(user && user.email === "admin@repscentral.com") isAdmin = true;
+  if(window.fakeAdmin) isAdmin = true;
+  applyAdmin(isAdmin);
 });
 
-const grid = document.getElementById("grid");
+
+/* DELETE SELECTED */
 let selected = new Set();
 
-document.getElementById("bulkDeleteBtn").onclick = async () => {
- for (let id of selected) await deleteDoc(doc(db,"tiktokvideos",id));
- selected.clear();
+bulkDeleteBtn.onclick = async () => {
+  for(const id of selected){
+     await deleteDoc(doc(db, "tiktokvideos", id));
+  }
+  selected.clear();
 };
 
-onSnapshot(collection(db,"tiktokvideos"), snap => {
+
+/* LIVE VIDEO GRID */
+onSnapshot(collection(db, "tiktokvideos"), snap => {
   grid.innerHTML = "";
-  snap.forEach(docu => {
-    const d = docu.data();
-    const id = docu.id;
+
+  snap.forEach(d => {
+    const data = d.data();
+    const id   = d.id;
+
     grid.innerHTML += `
-      <div class='card p-3'>
-        <img src='${d.thumbnailurl||""}' class='w-full h-64 object-cover rounded mb-2'>
-        <div class='flex justify-between items-center'>
-          <input type="checkbox" class="admin-only hidden" onchange="this.checked?selected.add('${id}'):selected.delete('${id}')">
-          <a href='tiktokvideo.html?id=${id}' class='text-blue-600 admin-only hidden'>Edit</a>
+      <div class="card p-3 cursor-pointer" onclick="location.href='tiktokvideo.html?id=${id}'">
+        <div class="thumb-box mb-2">
+          <img src="${data.thumbnailurl || ""}">
         </div>
-      </div>`;
+
+        <div class="flex justify-between items-center">
+          <input type="checkbox" class="admin-only hidden"
+            onchange="this.checked ? selected.add('${id}') : selected.delete('${id}')">
+          <span class="text-gray-500 text-sm">${id}</span>
+        </div>
+      </div>
+    `;
   });
 });
 </script>
-</body></html>
+
+</body>
+</html>
