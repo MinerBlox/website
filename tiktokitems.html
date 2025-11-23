@@ -1,39 +1,162 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8' />
+<title>TikTok Items</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
 
-<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>TikTok Items</title>
-<script src='https://cdn.tailwindcss.com'></script>
-</head><body class='bg-gray-50 p-6'>
+// --------------------------------------------
+//  FIREBASE CONFIG
+// --------------------------------------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+  getFirestore, doc, setDoc, getDoc, getDocs, collection 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-<header class='flex justify-between items-center mb-8 pb-4 rounded-b-xl shadow px-4 pt-4'
- style='background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%);'>
- <img src='https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png' class='h-10'/>
- <button onclick='toggleAdmin()' class='px-4 py-2 bg-blue-500 text-white rounded-xl shadow'>ADMIN</button>
-</header>
+const firebaseConfig = {
+  // -----------------------------
+  //   🔥 YOUR CONFIG GOES HERE 🔥
+  // -----------------------------
+  apiKey: "YOURKEY",
+  authDomain: "YOURDOMAIN",
+  projectId: "YOURPROJECTID",
+  storageBucket: "YOURBUCKET",
+  messagingSenderId: "YOURSENDER",
+  appId: "YOURAPPID"
+};
 
-<div id='adminPanel' class='hidden bg-white p-6 rounded-2xl shadow max-w-xl mx-auto mb-10'>
- <h2 class='text-xl font-bold mb-4'>Add TikTok Video</h2>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
- <input id='firebaseID' placeholder='Firebase Item ID' class='w-full p-3 border rounded-xl mb-3'/>
- <input id='mp4Url' placeholder='Raw MP4 URL' class='w-full p-3 border rounded-xl mb-3'/>
- <input id='thumbnailUrl' placeholder='Thumbnail URL' class='w-full p-3 border rounded-xl mb-3'/>
- <input id='published' placeholder='dd/mm/yyyy' class='w-full p-3 border rounded-xl mb-3'/>
 
- <div class='mb-3'>
-   <h3 class='font-bold mb-2'>Select Items</h3>
-   <div id='itemsDropdown' class='border rounded-xl p-3 h-48 overflow-y-scroll'>
-     <!-- populated by Firestore -->
-   </div>
- </div>
+// --------------------------------------------
+//  ADMIN PANEL TOGGLE
+// --------------------------------------------
+window.toggleAdmin = () => {
+  document.getElementById("adminPanel").classList.toggle("hidden");
+};
 
- <button class='w-full py-3 bg-blue-500 text-white rounded-xl' onclick='alert("Save logic here")'>Save</button>
-</div>
 
-<h2 class='text-3xl font-bold mb-6'>TikTok Videos</h2>
-<div id='grid' class='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8'>
- <!-- loaded dynamically -->
-</div>
+// --------------------------------------------
+//  LOAD ALL TIKTOK ITEMS INTO DROPDOWN
+// --------------------------------------------
+async function loadItemChoices() {
+  const container = document.getElementById("itemsDropdown");
+  container.innerHTML = "";
 
-<script>
-function toggleAdmin(){document.getElementById('adminPanel').classList.toggle('hidden');}
+  const snap = await getDocs(collection(db, "tiktokitems"));
+  snap.forEach(item => {
+    const name = item.id;
+
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-2 mb-1";
+
+    row.innerHTML = `
+      <input type="checkbox" value="${name}" class="itemCheck w-4 h-4" />
+      <label class="text-sm">${name}</label>
+    `;
+    container.appendChild(row);
+  });
+}
+loadItemChoices();
+
+
+// --------------------------------------------
+//  SAVE NEW TIKTOK VIDEO
+// --------------------------------------------
+window.saveTikTokVideo = async () => {
+  const firebaseID = document.getElementById("firebaseID").value.trim();
+  const mp4Url = document.getElementById("mp4Url").value.trim();
+  const thumbnailUrl = document.getElementById("thumbnailUrl").value.trim();
+  const published = document.getElementById("published").value.trim();
+
+  // Collect selected items
+  const selected = [...document.querySelectorAll(".itemCheck:checked")]
+    .map(c => c.value);
+
+  if (!firebaseID) {
+    alert("Firebase Item ID required");
+    return;
+  }
+
+  await setDoc(doc(db, "tiktokvideos", firebaseID), {
+    videourl: mp4Url,
+    thumbnailurl: thumbnailUrl,
+    published,
+    items: selected,
+    name: firebaseID // you can change to a real name later
+  });
+
+  alert("Saved!");
+
+  // reload grid to show new video
+  loadVideos();
+};
+
+
+// --------------------------------------------
+//  LOAD ALL TIKTOK VIDEOS INTO GRID
+// --------------------------------------------
+async function loadVideos() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  const snap = await getDocs(collection(db, "tiktokvideos"));
+
+  snap.forEach(video => {
+    const data = video.data();
+
+    const card = document.createElement("div");
+    card.className =
+      "rounded-2xl overflow-hidden shadow-xl bg-white hover:scale-[1.02] transition cursor-pointer";
+
+    card.onclick = () => location.href = `tiktokvideo.html?id=${video.id}`;
+
+    card.innerHTML = `
+      <div class="w-full h-[420px] bg-gray-200 overflow-hidden">
+        <img src="${data.thumbnailurl}" class="object-cover w-full h-full" />
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+loadVideos();
+
 </script>
 
-</body></html>
+<style>
+body { font-family: 'Inter', sans-serif; }
+</style>
+
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-6">
+
+<header class="flex justify-between items-center mb-8 pb-4 rounded-b-xl shadow px-4 pt-4"
+ style="background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%);">
+ <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10" />
+ <button onclick="toggleAdmin()" class="px-4 py-2 bg-accent text-white rounded-xl shadow font-semibold">ADMIN</button>
+</header>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="hidden bg-white p-6 rounded-2xl shadow max-w-xl mx-auto mb-10">
+  <h2 class="text-xl font-bold mb-4">Add TikTok Video</h2>
+
+  <input id="firebaseID" placeholder="Firebase Item ID" class="w-full p-3 border rounded-xl mb-3" />
+  <input id="mp4Url" placeholder="Raw MP4 URL" class="w-full p-3 border rounded-xl mb-3" />
+  <input id="thumbnailUrl" placeholder="Thumbnail URL" class="w-full p-3 border rounded-xl mb-3" />
+  <input id="published" placeholder="dd/mm/yyyy" class="w-full p-3 border rounded-xl mb-3" />
+
+  <h3 class="font-bold mb-2 mt-4">Select Items</h3>
+  <div id="itemsDropdown" class="border rounded-xl p-3 h-48 overflow-y-scroll bg-gray-50 mb-4"></div>
+
+  <button onclick="saveTikTokVideo()" class="w-full py-3 bg-accent text-white rounded-xl">Save</button>
+</div>
+
+<h2 class="text-3xl font-bold mb-6">TikTok Videos</h2>
+<div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+
+</body>
+</html>
