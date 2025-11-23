@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8' />
+<title>TikTok Video</title>
+<script src='https://cdn.tailwindcss.com'></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { "primary-dark": "#111827", accent: "#00AEEF" },
+      fontFamily: { sans: ["Inter","sans-serif"] }
+    }
+  }
+};
+</script>
+</head>
+<body class='bg-gray-50 text-gray-800 font-sans min-h-screen'>
+
+<div class='lg:ml-64 p-6'>
+
+<header class='flex justify-between items-center mb-8 pb-4 rounded-b-xl shadow-md px-4 pt-4'
+        style='background: linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%);'>
+  <div class='flex items-center space-x-3'>
+    <img src='https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png'
+         class='h-10 cursor-pointer' />
+  </div>
+</header>
+
+<div class='grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-6xl mx-auto'>
+
+  <div class='flex justify-center'>
+    <video id='videoPlayer' controls
+           class='rounded-2xl shadow-xl w-full max-w-sm bg-black'></video>
+  </div>
+
+  <div>
+    <h2 class='text-2xl font-bold mb-4'>Items in this Video</h2>
+    <div id='itemsList' class='space-y-4'>
+      <div class='bg-white rounded-xl shadow p-4 flex gap-4'>
+        <img src='https://placehold.co/200x200' class='w-24 h-24 rounded-lg object-cover' />
+        <div>
+          <h3 class='font-bold'>Item Name</h3>
+          <p class='text-sm text-gray-600'>$49</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+</body>
+</html>
