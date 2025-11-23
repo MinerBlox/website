@@ -89,11 +89,26 @@ body { background:#f8f8f8; }
   </header>
 
   <!-- ADMIN MODAL -->
-  <div id="adminModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-xl w-72">
-      <h2 class="text-lg font-bold mb-3">Admin Unlock</h2>
-      <input id="adminPass" type="password" placeholder="Password: admintest" class="w-full p-2 border rounded mb-4">
-      <button onclick="doAdminLogin()" class="bg-blue-500 text-white w-full py-2 rounded">Unlock</button>
+  <div id="adminModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl w-72 shadow-xl">
+      <h2 class="text-lg font-bold mb-3">Admin Login</h2>
+
+      <input id="adminEmail" type="email"
+             placeholder="Email"
+             class="w-full p-2 border rounded mb-2"
+             value="admin@repscentral.com">
+
+      <input id="adminPassword" type="password"
+             placeholder="Password"
+             class="w-full p-2 border rounded mb-4">
+
+      <button onclick="doAdminLogin()" class="bg-blue-500 text-white w-full py-2 rounded mb-2">
+        Login
+      </button>
+
+      <button onclick="closeAdmin()" class="text-center w-full text-sm text-gray-600">
+        Cancel
+      </button>
     </div>
   </div>
 
@@ -174,6 +189,14 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+
 const firebaseConfig = {
     apiKey:"AIzaSyDTI2oJIvrtQmYxwz8t2CQ9JJn8r7kMEy7JA",
     authDomain:"reps-central.firebaseapp.com",
@@ -185,29 +208,44 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 
 /* GLOBAL STATE */
-let isAdmin = false;
 let videoID = new URLSearchParams(location.search).get("id");
 let currentItems = [];
 let allItems = {};
 
 
 
-/* ADMIN */
+/* ADMIN AUTH */
 window.openAdmin = () => adminModal.classList.remove("hidden");
-function closeAdmin(){ adminModal.classList.add("hidden"); }
+window.closeAdmin = () => adminModal.classList.add("hidden");
 
-window.doAdminLogin = () => {
-  if(adminPass.value === "admintest"){
-    isAdmin = true;
-    document.getElementById("editItemsBtn").classList.remove("hidden");
+window.doAdminLogin = async () => {
+  const email = adminEmail.value.trim();
+  const pass = adminPassword.value;
+
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
     closeAdmin();
-  } else {
-    alert("Incorrect admin password.");
+  } catch (err) {
+    alert("Failed to log in: " + err.message);
   }
 };
+
+
+/* WATCH LOGIN STATE */
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    editItemsBtn.classList.add("hidden");
+    return;
+  }
+
+  if (user.email === "admin@repscentral.com") {
+    editItemsBtn.classList.remove("hidden");
+  }
+});
 
 
 /* SIDEBAR NAVIGATION */
