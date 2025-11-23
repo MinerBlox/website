@@ -30,18 +30,22 @@ body { background:#f8f8f8; }
   background: linear-gradient(135deg, #ffffff 60%, #e0f7fa 100%);
 }
 
-/* Thumbnail portrait ratio for items */
+/* Item square thumbnail */
 .item-thumb {
-  width: 100%;
-  padding-top: 125%;
-  position: relative;
-  overflow: hidden;
+  width: 80px;
+  height: 80px;
   border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 .item-thumb img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
+  width: 100%; height: 100%; object-fit: cover;
+}
+
+/* Video shadow */
+.video-shadow {
+  box-shadow: 0px 10px 25px rgba(0,0,0,0.25);
+  border-radius: 12px;
 }
 </style>
 </head>
@@ -93,25 +97,25 @@ body { background:#f8f8f8; }
     </div>
   </div>
 
-  <!-- VIDEO + ITEMS LAYOUT -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- VIDEO + RIGHT PANEL -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-    <!-- VIDEO PANEL -->
-    <div class="bg-white p-4 rounded-xl shadow">
-      <h2 class="text-xl font-bold mb-3">TikTok Video</h2>
-
+    <!-- LEFT: VIDEO ONLY -->
+    <div>
       <video id="videoPlayer"
-             class="w-full rounded-lg bg-black"
+             class="w-full video-shadow"
              controls
              playsinline></video>
-
-      <p id="videoDesc" class="text-gray-600 mt-3"></p>
     </div>
 
-    <!-- ITEMS PANEL -->
-    <div class="bg-white p-4 rounded-xl shadow">
-      <div class="flex justify-between items-center mb-3">
-        <h2 class="text-xl font-bold">Assigned Items</h2>
+    <!-- RIGHT: INFO + ITEMS -->
+    <div class="bg-white p-6 rounded-xl shadow">
+
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h1 id="videoTitle" class="text-2xl font-bold"></h1>
+          <p id="videoDesc" class="text-gray-600 mt-2"></p>
+        </div>
 
         <button id="editItemsBtn"
                 onclick="openItemPicker()"
@@ -120,10 +124,16 @@ body { background:#f8f8f8; }
         </button>
       </div>
 
-      <div id="assignedItems" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+      <div class="border-t border-gray-200 my-4"></div>
+
+      <h2 class="text-lg font-semibold mb-2">Items</h2>
+      <div id="assignedItems" class="space-y-3"></div>
+
     </div>
 
   </div>
+
+
   <!-- ITEM PICKER MODAL -->
   <div id="itemPickerModal"
        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -177,6 +187,7 @@ let currentItems = [];
 let allItems = {};
 
 
+
 /* ADMIN */
 window.openAdmin = () => adminModal.classList.remove("hidden");
 function closeAdmin(){ adminModal.classList.add("hidden"); }
@@ -216,7 +227,7 @@ window.navigate = (p) => {
 };
 
 
-/* LOAD VIDEO DATA */
+/* LOAD VIDEO */
 async function loadVideo(){
   const snap = await getDoc(doc(db, "tiktokvideos", videoID));
   if(!snap.exists()){
@@ -227,6 +238,7 @@ async function loadVideo(){
   const d = snap.data();
 
   videoPlayer.src = d.videourl || "";
+  videoTitle.textContent = d.name || "Untitled Video";
   videoDesc.textContent = d.description || "";
   currentItems = d.items || [];
 
@@ -243,13 +255,28 @@ async function loadAssignedItems(){
 
     const item = snap.data();
 
+    const pillClass =
+      item.availability === "Available" ? "bg-green-500 text-white" :
+      item.availability === "Low Stock" ? "bg-amber-500 text-white" :
+      item.availability === "Dead" ? "bg-red-500 text-white" :
+      "bg-gray-500 text-white";
+
     container.innerHTML += `
-      <div class="bg-gray-100 rounded-xl p-3 shadow">
-        <div class="item-thumb mb-2">
+      <div class="flex items-center gap-4 p-3 rounded-xl bg-gray-100 shadow">
+        <div class="item-thumb">
           <img src="${item.image}">
         </div>
-        <div class="font-semibold">${item.title}</div>
-        <div class="text-sm text-gray-600">${item.price} USD</div>
+
+        <div class="flex flex-col justify-center">
+          <div class="font-semibold">${item.title}</div>
+          <div class="text-sm text-gray-600">¥${item.price}</div>
+        </div>
+
+        <div class="ml-auto">
+          <span class="px-3 py-1 text-xs rounded-full ${pillClass}">
+            ${item.availability}
+          </span>
+        </div>
       </div>
     `;
   }
@@ -279,15 +306,18 @@ window.openItemPicker = async () => {
            id="pick_${id}"
            class="border rounded-xl p-3 cursor-pointer hover:shadow ${selected}">
         
-        <div class="item-thumb mb-2">
-          <img src="${item.image}">
+        <div class="item-thumb mb-2" style="width:100%; padding-top:100%; position:relative;">
+          <img src="${item.image}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
         </div>
 
         <div class="font-semibold">${item.title}</div>
-        <div class="text-sm text-gray-600">${item.price} USD</div>
+        <div class="text-sm text-gray-600">¥${item.price}</div>
         <div class="text-xs text-gray-500">${item.category}</div>
         <div class="text-xs mt-1 font-semibold ${
-            item.availability === 'Available' ? 'text-green-600' : 'text-red-500'
+            item.availability === 'Available' ? 'text-green-600' :
+            item.availability === 'Low Stock' ? 'text-amber-600' :
+            item.availability === 'Dead' ? 'text-red-600' :
+            'text-gray-600'
         }">${item.availability}</div>
       </div>
     `;
