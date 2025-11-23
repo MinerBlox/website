@@ -137,7 +137,14 @@ body { background:#f8f8f8; }
   <!-- ITEM PICKER MODAL -->
   <div id="itemPickerModal"
        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div class="bg-white w-full max-w-3xl max-h-[85vh] overflow-y-auto p-6 rounded-xl shadow-xl">
+
+    <div class="relative bg-white w-full max-w-3xl max-h-[85vh] overflow-y-auto p-6 rounded-xl shadow-xl">
+
+      <!-- CLOSE BUTTON -->
+      <button onclick="closeItemPicker()"
+              class="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl leading-none">
+        &times;
+      </button>
 
       <h2 class="text-2xl font-bold mb-4">Select Items</h2>
 
@@ -324,6 +331,10 @@ window.openItemPicker = async () => {
   }
 };
 
+window.closeItemPicker = () => {
+  itemPickerModal.classList.add("hidden");
+};
+
 window.toggleItem = (id) => {
   const el = document.getElementById("pick_" + id);
 
@@ -337,12 +348,17 @@ window.toggleItem = (id) => {
 };
 
 window.saveItemSelection = async () => {
-  await updateDoc(doc(db, "tiktokvideos", videoID), {
-    items: currentItems
-  });
+  try {
+    await updateDoc(doc(db, "tiktokvideos", videoID), {
+      items: currentItems
+    });
 
-  itemPickerModal.classList.add("hidden");
-  loadAssignedItems();
+    closeItemPicker();
+    loadAssignedItems();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to save changes: " + err.message);
+  }
 };
 
 
