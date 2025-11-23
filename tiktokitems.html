@@ -1,47 +1,80 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-<meta charset="UTF-8">
-<title>TikTok Videos Grid (Modern)</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta charset='UTF-8' />
+<title>TikTok Items</title>
+<script src='https://cdn.tailwindcss.com'></script>
 <script>
- tailwind.config = {
-   theme: {
-     extend: {
-       colors: { accent: "#00AEEF" },
-       fontFamily: { sans: ["Inter","sans-serif"] }
-     }
-   }
- };
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { "primary-dark": "#111827", accent: "#00AEEF" },
+      fontFamily: { sans: ["Inter","sans-serif"] }
+    }
+  }
+};
 </script>
 </head>
-<body class="bg-gray-50 p-8 font-sans">
+<body class='bg-gray-50 text-gray-800 font-sans min-h-screen'>
 
-<h2 class="text-3xl font-bold mb-6 text-gray-900">TikTok Videos</h2>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-
-  <!-- Example Card -->
-  <div class="rounded-2xl overflow-hidden shadow-xl bg-white hover:scale-[1.02] transition cursor-pointer">
-    <div class="w-full h-64 bg-gray-200 overflow-hidden">
-      <img src="https://placehold.co/600x900" class="object-cover w-full h-full" />
-    </div>
-  </div>
-
-  <div class="rounded-2xl overflow-hidden shadow-xl bg-white hover:scale-[1.02] transition cursor-pointer">
-    <div class="w-full h-64 bg-gray-200 overflow-hidden">
-      <img src="https://placehold.co/600x900" class="object-cover w-full h-full" />
-    </div>
-  </div>
-
-  <div class="rounded-2xl overflow-hidden shadow-xl bg-white hover:scale-[1.02] transition cursor-pointer">
-    <div class="w-full h-64 bg-gray-200 overflow-hidden">
-      <img src="https://placehold.co/600x900" class="object-cover w-full h-full" />
-    </div>
-  </div>
-
+<!-- Sidebar placeholder -->
+<div class='fixed top-0 left-0 h-full w-64 p-6 shadow-2xl bg-white border-r border-gray-200 hidden lg:block'>
+  <h3 class='text-xl font-bold text-accent mb-6'>Navigation</h3>
+  <nav class='flex flex-col space-y-3'>
+    <a href='index.html' class='text-primary-dark hover:text-accent'>Home</a>
+    <a href='products.html' class='text-primary-dark hover:text-accent'>Products</a>
+    <a href='link-converter.html' class='text-primary-dark hover:text-accent'>Link Converter</a>
+    <a href='trusted-sellers.html' class='text-primary-dark hover:text-accent'>Trusted Sellers</a>
+    <a href='tiktokitems.html' class='text-primary-dark font-bold text-accent'>TikTok Items</a>
+  </nav>
 </div>
 
+<!-- Main container -->
+<div class='lg:ml-64 p-6'>
+
+<header class='flex justify-between items-center mb-8 pb-4 rounded-b-xl shadow-md px-4 pt-4'
+        style='background: linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%);'>
+  <div class='flex items-center space-x-3'>
+    <img src='https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png'
+         class='h-10 cursor-pointer' />
+  </div>
+  <button onclick='toggleAdmin()'
+          class='px-4 py-2 bg-accent text-white rounded-xl shadow-lg font-semibold hover:bg-opacity-90 transition'>
+     ADMIN
+  </button>
+</header>
+
+<!-- Admin Panel -->
+<div id='adminPanel' class='hidden bg-white p-6 rounded-2xl shadow-xl max-w-xl mb-10'>
+  <h2 class='text-xl font-bold mb-4'>Add TikTok Video</h2>
+  <input id='videoID' placeholder='Video ID' class='w-full p-3 border rounded-xl mb-3' />
+  <input id='mp4Url' placeholder='Raw MP4 URL' class='w-full p-3 border rounded-xl mb-3' />
+  <input id='thumbnailUrl' placeholder='Thumbnail URL' class='w-full p-3 border rounded-xl mb-3' />
+  <input id='published' placeholder='dd/mm/yyyy' class='w-full p-3 border rounded-xl mb-3' />
+  <textarea id='items' placeholder='["Always Tees","Nike Socks"]'
+            class='w-full p-3 border rounded-xl mb-3'></textarea>
+  <button onclick='alert("Save to Firestore logic goes here")'
+          class='w-full py-3 bg-accent text-white rounded-xl'>Save</button>
+</div>
+
+<script>
+function toggleAdmin() {
+  document.getElementById('adminPanel').classList.toggle('hidden');
+}
+</script>
+
+<h2 class='text-3xl font-bold mb-6'>TikTok Videos</h2>
+
+<!-- Video Grid -->
+<div id='grid' class='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8'>
+  <div class='rounded-2xl overflow-hidden shadow-xl bg-white hover:scale-[1.02] transition cursor-pointer'
+       onclick="location.href='tiktokvideo.html?id=example'">
+    <div class='w-full h-[420px] bg-gray-200 overflow-hidden'>
+      <img src='https://placehold.co/600x900' class='object-cover w-full h-full' />
+    </div>
+  </div>
+</div>
+
+</div>
 </body>
 </html>
