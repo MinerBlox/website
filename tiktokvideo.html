@@ -88,7 +88,8 @@ body { background:#f8f8f8; }
     <button onclick="openAdmin()" class="text-gray-700">Admin?</button>
   </header>
 
-  <!-- ADMIN MODAL -->
+
+  <!-- ADMIN LOGIN MODAL -->
   <div id="adminModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded-xl w-72 shadow-xl">
       <h2 class="text-lg font-bold mb-3">Admin Login</h2>
@@ -111,6 +112,7 @@ body { background:#f8f8f8; }
       </button>
     </div>
   </div>
+
 
   <!-- VIDEO + RIGHT PANEL -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -149,6 +151,7 @@ body { background:#f8f8f8; }
   </div>
 
 
+
   <!-- ITEM PICKER MODAL -->
   <div id="itemPickerModal"
        class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -174,12 +177,20 @@ body { background:#f8f8f8; }
     </div>
   </div>
 
+
 </div><!-- END MAIN WRAPPER -->
 
 
 <!-- FIREBASE LOGIC -->
 <script type="module">
+/* IMPORT CORRECT CDN MODULES */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore,
   doc,
@@ -189,14 +200,8 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-
+/* 🔥 FINAL, WORKING FIREBASE CONFIG — ES MODULE COMPATIBLE */
 const firebaseConfig = {
   apiKey: "AIzaSyDTIzoJIvr0mYxw82c9QJJn8rXrMEy7JA",
   authDomain: "reps-central.firebaseapp.com",
@@ -207,9 +212,11 @@ const firebaseConfig = {
   measurementId: "G-8T7F9F1FZ9"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+
+/* Initialize app + required services */
+initializeApp(firebaseConfig);
+const auth = getAuth();      // <-- important fix
+const db = getFirestore();   // <-- important fix
 
 
 /* GLOBAL STATE */
@@ -219,7 +226,10 @@ let allItems = {};
 
 
 
-/* ADMIN AUTH */
+/* ================================
+      ADMIN AUTH HANDLING
+================================= */
+
 window.openAdmin = () => adminModal.classList.remove("hidden");
 window.closeAdmin = () => adminModal.classList.add("hidden");
 
@@ -236,7 +246,6 @@ window.doAdminLogin = async () => {
 };
 
 
-/* WATCH LOGIN STATE */
 onAuthStateChanged(auth, user => {
   if (!user) {
     editItemsBtn.classList.add("hidden");
@@ -249,7 +258,11 @@ onAuthStateChanged(auth, user => {
 });
 
 
-/* SIDEBAR NAVIGATION */
+
+/* ================================
+        SIDEBAR NAVIGATION
+================================= */
+
 window.toggleSidebar = () => {
   const sb = document.getElementById('sidebar');
   const bg = document.getElementById('sidebarBackdrop');
@@ -273,7 +286,11 @@ window.navigate = (p) => {
 };
 
 
-/* LOAD VIDEO */
+
+/* ================================
+          LOAD VIDEO DATA
+================================= */
+
 async function loadVideo(){
   const snap = await getDoc(doc(db, "tiktokvideos", videoID));
   if(!snap.exists()){
@@ -329,7 +346,11 @@ async function loadAssignedItems(){
 }
 
 
-/* ITEM PICKER */
+
+/* ================================
+          ITEM PICKER
+================================= */
+
 window.openItemPicker = async () => {
   itemPickerModal.classList.remove("hidden");
 
