@@ -1,160 +1,205 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 <head>
-<meta charset='UTF-8' />
+<meta charset="UTF-8">
 <title>TikTok Items</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script type="module">
-
-// --------------------------------------------
-//  FIREBASE CONFIG
-// --------------------------------------------
+/* ================= FIREBASE IMPORTS ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
   getFirestore, doc, setDoc, getDoc, getDocs, collection 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+/* ================= FIREBASE CONFIG ================= */
 const firebaseConfig = {
-  apiKey: "AIzaSyDTTzoJlvr0mYxwx82cQ9JJn8rXrMEy7JA",
-  authDomain: "reps-central.firebaseapp.com",
-  projectId: "reps-central",
-  storageBucket: "reps-central.firebasestorage.app",
-  messagingSenderId: "812299387060",
-  appId: "1:812299387060:web:1c93d1e7bf30b05653d7e1",
-  measurementId: "G-8T7F9F1FZ9"
+  apiKey: "YOURKEY",
+  authDomain: "YOURDOMAIN",
+  projectId: "YOURPROJECTID",
+  storageBucket: "YOURBUCKET",
+  messagingSenderId: "YOURSENDER",
+  appId: "YOURAPPID"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
+/* ================= UI REFS ================= */
+const loginModal = () => document.getElementById("loginModal");
+const adminBtn = () => document.getElementById("adminBtn");
+const logoutBtn = () => document.getElementById("logoutBtn");
+const adminPanel = () => document.getElementById("adminPanel");
+const itemsDropdown = () => document.getElementById("itemsDropdown");
+const grid = () => document.getElementById("grid");
 
-// --------------------------------------------
-//  ADMIN PANEL TOGGLE
-// --------------------------------------------
-window.toggleAdmin = () => {
-  document.getElementById("adminPanel").classList.toggle("hidden");
+/* ================= AUTH STATE ================= */
+onAuthStateChanged(auth, user => {
+  if (user) {
+    adminBtn().classList.remove("hidden");
+    logoutBtn().classList.remove("hidden");
+  } else {
+    adminBtn().classList.add("hidden");
+    logoutBtn().classList.add("hidden");
+    adminPanel().classList.add("hidden");
+  }
+});
+
+/* ================= LOGIN CONTROLS ================= */
+window.openLogin = () => loginModal().classList.remove("hidden");
+window.closeLogin = () => loginModal().classList.add("hidden");
+
+window.doLogin = async () => {
+  const em = document.getElementById("loginEmail").value;
+  const pw = document.getElementById("loginPass").value;
+  try {
+    await signInWithEmailAndPassword(auth, em, pw);
+    closeLogin();
+  } catch (err) {
+    alert("Login failed.");
+  }
 };
 
+logoutBtn().onclick = () => signOut(auth);
 
-// --------------------------------------------
-//  LOAD ALL TIKTOK ITEMS INTO DROPDOWN
-// --------------------------------------------
+/* ================= ADMIN PANEL ================= */
+window.toggleAdmin = () =>
+  adminPanel().classList.toggle("hidden");
+
+/* Load items for multi-select */
 async function loadItemChoices() {
-  const container = document.getElementById("itemsDropdown");
-  container.innerHTML = "";
-
+  itemsDropdown().innerHTML = "";
   const snap = await getDocs(collection(db, "tiktokitems"));
   snap.forEach(item => {
-    const name = item.id;
-
     const row = document.createElement("div");
     row.className = "flex items-center gap-2 mb-1";
-
     row.innerHTML = `
-      <input type="checkbox" value="${name}" class="itemCheck w-4 h-4" />
-      <label class="text-sm">${name}</label>
+      <input type="checkbox" value="${item.id}" class="itemCheck">
+      <label>${item.id}</label>
     `;
-    container.appendChild(row);
+    itemsDropdown().appendChild(row);
   });
 }
 loadItemChoices();
 
+/* ================= SAVE / EDIT VIDEO ================= */
+let editingID = null;
 
-// --------------------------------------------
-//  SAVE NEW TIKTOK VIDEO
-// --------------------------------------------
-window.saveTikTokVideo = async () => {
-  const firebaseID = document.getElementById("firebaseID").value.trim();
-  const mp4Url = document.getElementById("mp4Url").value.trim();
-  const thumbnailUrl = document.getElementById("thumbnailUrl").value.trim();
-  const published = document.getElementById("published").value.trim();
+window.saveVideo = async () => {
+  const id = document.getElementById("firebaseID").value.trim();
+  if (!id) return alert("Missing Firebase ID");
 
-  // Collect selected items
-  const selected = [...document.querySelectorAll(".itemCheck:checked")]
-    .map(c => c.value);
+  const mp4 = document.getElementById("mp4Url").value;
+  const thumb = document.getElementById("thumbnailUrl").value;
+  const pub = document.getElementById("published").value;
 
-  if (!firebaseID) {
-    alert("Firebase Item ID required");
-    return;
-  }
+  const items = [...document.querySelectorAll(".itemCheck:checked")].map(x => x.value);
 
-  await setDoc(doc(db, "tiktokvideos", firebaseID), {
-    videourl: mp4Url,
-    thumbnailurl: thumbnailUrl,
-    published,
-    items: selected,
-    name: firebaseID // you can change to a real name later
+  await setDoc(doc(db, "tiktokvideos", id), {
+    videourl: mp4,
+    thumbnailurl: thumb,
+    published: pub,
+    items
   });
 
-  alert("Saved!");
-
-  // reload grid to show new video
+  alert("Saved.");
+  editingID = null;
   loadVideos();
 };
 
+/* Edit existing video */
+async function editVideo(id) {
+  editingID = id;
+  const snap = await getDoc(doc(db, "tiktokvideos", id));
+  if (!snap.exists()) return;
 
-// --------------------------------------------
-//  LOAD ALL TIKTOK VIDEOS INTO GRID
-// --------------------------------------------
-async function loadVideos() {
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
+  const d = snap.data();
+  adminPanel().classList.remove("hidden");
 
-  const snap = await getDocs(collection(db, "tiktokvideos"));
+  document.getElementById("firebaseID").value = id;
+  document.getElementById("mp4Url").value = d.videourl || "";
+  document.getElementById("thumbnailUrl").value = d.thumbnailurl || "";
+  document.getElementById("published").value = d.published || "";
 
-  snap.forEach(video => {
-    const data = video.data();
-
-    const card = document.createElement("div");
-    card.className =
-      "rounded-2xl overflow-hidden shadow-xl bg-white hover:scale-[1.02] transition cursor-pointer";
-
-    card.onclick = () => location.href = `tiktokvideo.html?id=${video.id}`;
-
-    card.innerHTML = `
-      <div class="w-full h-[420px] bg-gray-200 overflow-hidden">
-        <img src="${data.thumbnailurl}" class="object-cover w-full h-full" />
-      </div>
-    `;
-
-    grid.appendChild(card);
+  [...document.querySelectorAll(".itemCheck")].forEach(c => c.checked = false);
+  if (d.items) d.items.forEach(v => {
+    const box = [...document.querySelectorAll(".itemCheck")].find(b => b.value === v);
+    if (box) box.checked = true;
   });
 }
 
+/* ================= LOAD VIDEOS GRID ================= */
+async function loadVideos() {
+  grid().innerHTML = "";
+  const snap = await getDocs(collection(db, "tiktokvideos"));
+
+  snap.forEach(v => {
+    const d = v.data();
+    const card = document.createElement("div");
+    card.className = "rounded-xl shadow bg-white p-3";
+
+    card.innerHTML = `
+      <img src="${d.thumbnailurl}" class="w-full h-64 object-cover rounded">
+      <div class="flex justify-between items-center mt-2">
+        <div class="font-medium">${v.id}</div>
+        <button class="text-blue-500" data-edit="${v.id}">Edit</button>
+      </div>
+    `;
+
+    grid().appendChild(card);
+  });
+
+  [...document.querySelectorAll("[data-edit]")].forEach(btn => {
+    btn.onclick = () => editVideo(btn.getAttribute("data-edit"));
+  });
+}
 loadVideos();
-
 </script>
-
-<style>
-body { font-family: 'Inter', sans-serif; }
-</style>
-
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-6">
+
+<body class="bg-gray-50 p-6 font-sans">
 
 <header class="flex justify-between items-center mb-8 pb-4 rounded-b-xl shadow px-4 pt-4"
- style="background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%);">
- <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10" />
- <button onclick="toggleAdmin()" class="px-4 py-2 bg-accent text-white rounded-xl shadow font-semibold">ADMIN</button>
+ style="background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%)">
+  <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10">
+  <div class="flex gap-4 items-center">
+    <button id="logoutBtn" class="hidden text-red-500 text-sm">Logout</button>
+    <button onclick="openLogin()" class="text-sm text-gray-500">Admin?</button>
+    <button id="adminBtn" onclick="toggleAdmin()" class="hidden px-4 py-1 bg-blue-500 text-white rounded">ADMIN</button>
+  </div>
 </header>
 
-<!-- ADMIN PANEL -->
-<div id="adminPanel" class="hidden bg-white p-6 rounded-2xl shadow max-w-xl mx-auto mb-10">
-  <h2 class="text-xl font-bold mb-4">Add TikTok Video</h2>
-
-  <input id="firebaseID" placeholder="Firebase Item ID" class="w-full p-3 border rounded-xl mb-3" />
-  <input id="mp4Url" placeholder="Raw MP4 URL" class="w-full p-3 border rounded-xl mb-3" />
-  <input id="thumbnailUrl" placeholder="Thumbnail URL" class="w-full p-3 border rounded-xl mb-3" />
-  <input id="published" placeholder="dd/mm/yyyy" class="w-full p-3 border rounded-xl mb-3" />
-
-  <h3 class="font-bold mb-2 mt-4">Select Items</h3>
-  <div id="itemsDropdown" class="border rounded-xl p-3 h-48 overflow-y-scroll bg-gray-50 mb-4"></div>
-
-  <button onclick="saveTikTokVideo()" class="w-full py-3 bg-accent text-white rounded-xl">Save</button>
+<!-- Login Modal -->
+<div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
+  <div class="bg-white p-6 rounded-xl max-w-xs w-full shadow-lg">
+    <h2 class="font-bold text-lg mb-3">Admin Login</h2>
+    <input id="loginEmail" placeholder="Email" class="w-full p-2 border rounded mb-2">
+    <input id="loginPass" type="password" placeholder="Password" class="w-full p-2 border rounded mb-4">
+    <button onclick="doLogin()" class="w-full bg-blue-500 text-white py-2 rounded mb-2">Login</button>
+    <button onclick="closeLogin()" class="w-full text-gray-500 text-sm">Cancel</button>
+  </div>
 </div>
 
-<h2 class="text-3xl font-bold mb-6">TikTok Videos</h2>
-<div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+<!-- Admin Panel -->
+<div id="adminPanel" class="hidden bg-white p-6 rounded-xl shadow max-w-xl mb-10">
+  <h2 class="font-bold text-xl mb-4">TikTok Video</h2>
+
+  <input id="firebaseID" class="w-full p-2 border rounded mb-2" placeholder="Firebase Item ID">
+  <input id="mp4Url" class="w-full p-2 border rounded mb-2" placeholder="MP4 URL">
+  <input id="thumbnailUrl" class="w-full p-2 border rounded mb-2" placeholder="Thumbnail URL">
+  <input id="published" class="w-full p-2 border rounded mb-4" placeholder="dd/mm/yyyy">
+
+  <h3 class="font-bold mb-2">Items</h3>
+  <div id="itemsDropdown" class="border rounded p-3 h-40 overflow-y-scroll bg-gray-50 mb-4"></div>
+
+  <button onclick="saveVideo()" class="w-full bg-blue-500 text-white py-2 rounded">Save</button>
+</div>
+
+<h2 class="text-2xl font-bold mb-4">TikTok Videos</h2>
+<div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
 </body>
 </html>
