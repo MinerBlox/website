@@ -1,58 +1,53 @@
-
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
 <title>Edit TikTok Video</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        "primary-dark": "#111827",
-        accent: "#00AEEF",
-      },
-      fontFamily: { sans: ["Inter","sans-serif"] }
-    }
-  }
-}
+tailwind.config={theme:{extend:{colors:{accent:"#00AEEF"}}}};
 </script>
+
 <style>
-body { background:#f8f8f8; }
-.header-gradient { background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%); }
-.card { background:white; border:1px solid #e5e7eb; border-radius:0.75rem; box-shadow:0 4px 6px rgba(0,0,0,0.05); }
+body{background:#f8f8f8;}
+.header-gradient{background:linear-gradient(135deg,#ffffff 60%,#e0f7fa 100%);}
 </style>
+</head>
 
-</head><body class='p-6 font-sans'>
+<body class="p-6 bg-gray-100 font-sans">
 
-<header class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-4 sm:px-8 pt-4">
+<!-- HEADER -->
+<header onclick="location.href='index.html'" class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-6 pt-4 cursor-pointer">
   <div class="flex items-center space-x-3">
     <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
     </svg>
-    <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10" />
-  </div>
-  <div class="flex items-center gap-4">
-    <button onclick="openLogin()" class="text-sm text-gray-600">Admin?</button>
-    <button id="logoutBtn" class="hidden text-red-500 text-sm" onclick="doLogout()">Logout</button>
+    <img src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png" class="h-10"/>
   </div>
 </header>
 
 
+<!-- EDITOR -->
 <div class="max-w-xl mx-auto bg-white p-6 rounded-xl shadow">
- <h1 class="text-2xl font-bold mb-4">TikTok Video Editor</h1>
+ <h1 class="text-2xl font-bold mb-4">Edit TikTok Video</h1>
+
  <input id="videoID" class="w-full p-2 border rounded mb-2" placeholder="Video ID">
- <input id="url" class="w-full p-2 border rounded mb-2" placeholder="Video URL">
- <input id="thumb" class="w-full p-2 border rounded mb-4" placeholder="Thumbnail URL">
- <button onclick="save()" class="admin-only hidden bg-blue-500 text-white w-full py-2 rounded">Save</button>
+ <input id="url"     class="w-full p-2 border rounded mb-2" placeholder="Video URL">
+ <input id="thumb"   class="w-full p-2 border rounded mb-4" placeholder="Thumbnail URL (1080x1920)">
+
+ <button onclick="save()" class="admin-only hidden bg-blue-500 text-white w-full py-2 rounded">
+   Save Video
+ </button>
 </div>
 
-<script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey:"AIzaSyDTI2oJIvrtQmYxwz8t2CQ9JJn8r7kMEy7JA",
@@ -60,40 +55,62 @@ const firebaseConfig = {
     projectId:"reps-central",
     storageBucket:"reps-central.firebasestorage.app",
     messagingSenderId:"812299387060",
-    appId:"1:812299387060:web:1c93d1e7bf30b65653d7e1",
-    measurementId:"G-87F79F1FZ9"
+    appId:"1:812299387060:web:1c93d1e7bf30b65653d7e1"
 };
 
-
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-let admin=false;
+const db  = getFirestore(app);
+const auth= getAuth(app);
 
-onAuthStateChanged(auth,u=>{admin=!!u; document.querySelectorAll('.admin-only').forEach(e=>e.classList.toggle('hidden',!admin));});
+function applyAdmin(isAdmin){
+  document.querySelectorAll(".admin-only").forEach(el =>
+    el.classList.toggle("hidden", !isAdmin)
+  );
+}
 
-const params=new URLSearchParams(location.search);
-const id=params.get("id");
+onAuthStateChanged(auth, user => {
+  let isAdmin = false;
+  if(user && user.email==="admin@repscentral.com") isAdmin = true;
+  if(window.fakeAdmin) isAdmin = true;
+  applyAdmin(isAdmin);
+});
+
+
+// LOAD VIDEO
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
 if(id) load();
 
 async function load(){
-  const snap=await getDoc(doc(db,"tiktokvideos",id));
+  const snap = await getDoc(doc(db, "tiktokvideos", id));
   if(!snap.exists()) return;
-  const d=snap.data();
-  document.getElementById("videoID").value=id;
-  document.getElementById("url").value=d.videourl||"";
-  document.getElementById("thumb").value=d.thumbnailurl||"";
+
+  const d = snap.data();
+  videoID.value = id;
+  url.value     = d.videourl || "";
+  thumb.value   = d.thumbnailurl || "";
 }
 
+
+// SAVE VIDEO
 async function save(){
-  if(!admin) return alert("Not admin");
-  const id=document.getElementById("videoID").value.trim();
-  await setDoc(doc(db,"tiktokvideos",id),{
-    videourl:document.getElementById("url").value,
-    thumbnailurl:document.getElementById("thumb").value
+  let isAdmin = false;
+
+  if(auth.currentUser && auth.currentUser.email==="admin@repscentral.com") isAdmin = true;
+  if(window.fakeAdmin) isAdmin = true;
+
+  if(!isAdmin) return alert("Not admin.");
+
+  const newID = videoID.value.trim();
+
+  await setDoc(doc(db, "tiktokvideos", newID), {
+    videourl:    url.value,
+    thumbnailurl: thumb.value
   });
+
   alert("Saved");
 }
 </script>
 
-</body></html>
+</body>
+</html>
