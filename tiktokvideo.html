@@ -1,34 +1,206 @@
 <!DOCTYPE html>
-<html><body>
-<!-- TikTok Video Page (Admin Removed) -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TikTok Video</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        .header-gradient {
+            background: linear-gradient(135deg, #ffffff 60%, #e0f7fa 100%);
+        }
+
+        .video-shadow {
+            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+        }
+
+        .item-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .item-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+
+<body class="font-sans text-gray-800 bg-[#f8f8f8]">
+
+<!-- SIDEBAR -->
+<div id="sidebar"
+     class="fixed top-0 left-0 h-full w-64 p-6 shadow-2xl transform -translate-x-full transition-transform duration-300 z-50 bg-white border-r border-gray-200">
+
+    <h3 class="text-xl font-bold text-blue-500 mb-6">Navigation</h3>
+
+    <nav class="flex flex-col space-y-3">
+        <button onclick="navigate('home')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Home</button>
+        <button onclick="navigate('data')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Spreadsheet</button>
+        <button onclick="navigate('link-converter')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Link Converter</button>
+        <button onclick="navigate('trusted-sellers')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Trusted Sellers</button>
+        <button onclick="navigate('tiktok-items')" class="text-left py-2 px-3 rounded-lg font-medium bg-gray-200">TikTok Videos</button>
+    </nav>
+</div>
+
+<div id="sidebarBackdrop"
+     onclick="toggleSidebar()"
+     class="hidden fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+
+<div class="max-w-7xl mx-auto p-4 sm:p-8">
+
+    <!-- HEADER -->
+    <header class="header-gradient flex justify-between items-center mb-6 pb-4 rounded-b-xl shadow-md px-4 sm:px-8 pt-4">
+        <svg onclick="toggleSidebar()" class="w-8 h-8 text-blue-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+
+        <img onclick="navigate('home')"
+             src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/mainlogo.png"
+             class="h-10 cursor-pointer">
+    </header>
+
+    <!-- VIDEO + RIGHT PANEL -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- LEFT: VIDEO -->
+        <div>
+            <video id="videoPlayer"
+                   class="w-full video-shadow"
+                   controls
+                   playsinline></video>
+        </div>
+
+        <!-- RIGHT: INFO + ITEMS -->
+        <div class="bg-white p-6 rounded-xl shadow">
+
+            <div class="mb-4">
+                <h1 id="videoTitle" class="text-2xl font-bold"></h1>
+                <p id="videoDesc" class="text-gray-600 mt-2"></p>
+            </div>
+
+            <div class="border-t border-gray-200 my-4"></div>
+
+            <h2 class="text-lg font-semibold mb-2">Items</h2>
+            <div id="assignedItems" class="space-y-3"></div>
+
+        </div>
+    </div>
+</div>
+
+<!-- FIREBASE DATA LOADING ONLY -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+    getFirestore,
+    doc,
+    getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDTIzoJIvr0mYxw82c9QJJn8rXrMEy7JA",
-  authDomain: "reps-central.firebaseapp.com",
-  projectId: "reps-central",
-  storageBucket: "reps-central.firebasestorage.app",
-  messagingSenderId: "812299387060",
-  appId: "1:812299387060:web:1c93d1e7bf30b65653d7e1",
-  measurementId: "G-8T7F9F1FZ9"
+    apiKey: "AIzaSyDTIzoJIvr0mYxw82c9QJJn8rXrMEy7JA",
+    authDomain: "reps-central.firebaseapp.com",
+    projectId: "reps-central",
+    storageBucket: "reps-central.firebasestorage.app",
+    messagingSenderId: "812299387060",
+    appId: "1:812299387060:web:1c93d1e7bf30b65653d7e1",
+    measurementId: "G-8T7F9F1FZ9"
 };
+
 initializeApp(firebaseConfig);
 const db = getFirestore();
 
+/* NAVIGATION */
+window.toggleSidebar = () => {
+    const sb = document.getElementById('sidebar');
+    const bg = document.getElementById('sidebarBackdrop');
+    const closed = sb.classList.contains("-translate-x-full");
+
+    if (closed) {
+        sb.classList.remove("-translate-x-full");
+        bg.classList.remove("hidden");
+    } else {
+        sb.classList.add("-translate-x-full");
+        bg.classList.add("hidden");
+    }
+};
+
+window.navigate = (p) => {
+    if (p === "home") location.href = "index.html";
+    if (p === "data") location.href = "products.html";
+    if (p === "link-converter") location.href = "link-converter.html";
+    if (p === "trusted-sellers") location.href = "trusted-sellers.html";
+    if (p === "tiktok-items") location.href = "tiktokitems (3).html";
+};
+
+/* LOAD VIDEO */
 let videoID = new URLSearchParams(location.search).get("id");
-async function loadVideo(){
-  const snap = await getDoc(doc(db, "tiktokvideos", videoID));
-  const d = snap.data();
-  document.getElementById("videoPlayer").src = d.videourl;
-  document.getElementById("videoTitle").textContent = d.name;
-  document.getElementById("videoDesc").textContent = d.description;
+let currentItems = [];
+
+async function loadVideo() {
+    const snap = await getDoc(doc(db, "tiktokvideos", videoID));
+    if (!snap.exists()) {
+        alert("Video not found");
+        return;
+    }
+
+    const d = snap.data();
+
+    videoPlayer.src = d.videourl || "";
+    videoTitle.textContent = d.name || "Untitled Video";
+    videoDesc.textContent = d.description || "";
+
+    currentItems = d.items || [];
+
+    loadItems();
 }
+
+/* LOAD ITEMS */
+async function loadItems() {
+    const container = document.getElementById("assignedItems");
+    container.innerHTML = "";
+
+    for (const id of currentItems) {
+        const snap = await getDoc(doc(db, "tiktokitems", id));
+        if (!snap.exists()) continue;
+
+        const item = snap.data();
+
+        const pillClass =
+            item.availability === "Available" ? "bg-green-500 text-white" :
+            item.availability === "Low Stock" ? "bg-amber-500 text-white" :
+            item.availability === "Dead" ? "bg-red-500 text-white" :
+            "bg-gray-500 text-white";
+
+        container.innerHTML += `
+            <div class="flex items-center gap-4 p-3 rounded-xl bg-gray-100 shadow">
+                <div class="item-thumb">
+                    <img src="${item.image}">
+                </div>
+
+                <div class="flex flex-col justify-center">
+                    <div class="font-semibold">${item.title}</div>
+                    <div class="text-sm text-gray-600">¥${item.price}</div>
+                </div>
+
+                <div class="ml-auto">
+                    <span class="px-3 py-1 text-xs rounded-full ${pillClass}">
+                        ${item.availability}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+}
+
 loadVideo();
 </script>
 
-<video id="videoPlayer" controls></video>
-<h1 id="videoTitle"></h1>
-<p id="videoDesc"></p>
-</body></html>
+</body>
+</html>
