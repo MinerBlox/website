@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TikTok Video</title>
+    <title>TikTok Items Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -11,23 +11,24 @@
             background: linear-gradient(135deg, #ffffff 60%, #e0f7fa 100%);
         }
 
-        .video-shadow {
-            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.25);
+        .thumb {
+            width: 100%;
+            padding-top: 100%;
+            position: relative;
             border-radius: 12px;
-        }
-
-        .item-thumb {
-            width: 80px;
-            height: 80px;
-            border-radius: 10px;
             overflow: hidden;
-            flex-shrink: 0;
         }
 
-        .item-thumb img {
+        .thumb img {
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .selected {
+            outline: 4px solid #3b82f6;
         }
     </style>
 </head>
@@ -45,7 +46,7 @@
         <button onclick="navigate('data')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Spreadsheet</button>
         <button onclick="navigate('link-converter')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Link Converter</button>
         <button onclick="navigate('trusted-sellers')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-100">Trusted Sellers</button>
-        <button onclick="navigate('tiktok-items')" class="text-left py-2 px-3 rounded-lg font-medium bg-gray-200">TikTok Videos</button>
+        <button onclick="navigate('tiktok-items')" class="text-left py-2 px-3 rounded-lg font-medium hover:bg-gray-200">TikTok Admin</button>
     </nav>
 </div>
 
@@ -53,6 +54,7 @@
      onclick="toggleSidebar()"
      class="hidden fixed inset-0 bg-black bg-opacity-50 z-40"></div>
 
+<!-- MAIN WRAPPER -->
 <div class="max-w-7xl mx-auto p-4 sm:p-8">
 
     <!-- HEADER -->
@@ -66,41 +68,40 @@
              class="h-10 cursor-pointer">
     </header>
 
-    <!-- VIDEO + RIGHT PANEL -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- PASSWORD SECTION -->
+    <div id="pwSection" class="bg-white p-6 rounded-xl shadow max-w-md mx-auto text-center">
+        <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
+        <input id="pw" type="password" placeholder="Enter admin password" class="border p-2 rounded w-full mb-4">
+        <button onclick="unlock()" class="bg-blue-500 text-white px-4 py-2 rounded w-full">Unlock</button>
+    </div>
 
-        <!-- LEFT: VIDEO -->
-        <div>
-            <video id="videoPlayer"
-                   class="w-full video-shadow"
-                   controls
-                   playsinline></video>
+    <!-- ADMIN SECTION -->
+    <div id="adminSection" class="hidden">
+
+        <h1 class="text-3xl font-bold mb-6">Select Items for TikTok Video</h1>
+
+        <!-- ITEMS GRID -->
+        <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 mb-8"></div>
+
+        <!-- OUTPUT BOX -->
+        <div class="bg-white p-6 rounded-xl shadow max-w-2xl mx-auto">
+            <h2 class="text-xl font-semibold mb-2">Selected Items JSON</h2>
+            <textarea id="output" class="w-full h-40 p-3 border rounded text-sm"></textarea>
+            <button onclick="copyOut()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
+                Copy JSON
+            </button>
         </div>
 
-        <!-- RIGHT: INFO + ITEMS -->
-        <div class="bg-white p-6 rounded-xl shadow">
-
-            <div class="mb-4">
-                <h1 id="videoTitle" class="text-2xl font-bold"></h1>
-                <p id="videoDesc" class="text-gray-600 mt-2"></p>
-            </div>
-
-            <div class="border-t border-gray-200 my-4"></div>
-
-            <h2 class="text-lg font-semibold mb-2">Items</h2>
-            <div id="assignedItems" class="space-y-3"></div>
-
-        </div>
     </div>
 </div>
 
-<!-- FIREBASE DATA LOADING ONLY -->
+<!-- FIREBASE MODULE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
     getFirestore,
-    doc,
-    getDoc
+    collection,
+    getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -109,17 +110,16 @@ const firebaseConfig = {
     projectId: "reps-central",
     storageBucket: "reps-central.firebasestorage.app",
     messagingSenderId: "812299387060",
-    appId: "1:812299387060:web:1c93d1e7bf30b65653d7e1",
-    measurementId: "G-8T7F9F1FZ9"
+    appId: "1:812299387060:web:1c93d1e7bf30b65653d7e1"
 };
 
 initializeApp(firebaseConfig);
 const db = getFirestore();
 
-/* NAVIGATION */
+/* SIDEBAR */
 window.toggleSidebar = () => {
-    const sb = document.getElementById('sidebar');
-    const bg = document.getElementById('sidebarBackdrop');
+    const sb = document.getElementById("sidebar");
+    const bg = document.getElementById("sidebarBackdrop");
     const closed = sb.classList.contains("-translate-x-full");
 
     if (closed) {
@@ -136,70 +136,65 @@ window.navigate = (p) => {
     if (p === "data") location.href = "products.html";
     if (p === "link-converter") location.href = "link-converter.html";
     if (p === "trusted-sellers") location.href = "trusted-sellers.html";
-    if (p === "tiktok-items") location.href = "tiktokitems (3).html";
+    if (p === "tiktok-items") location.href = "tiktokitems.html";
 };
 
-/* LOAD VIDEO */
-let videoID = new URLSearchParams(location.search).get("id");
-let currentItems = [];
-
-async function loadVideo() {
-    const snap = await getDoc(doc(db, "tiktokvideos", videoID));
-    if (!snap.exists()) {
-        alert("Video not found");
-        return;
+/* PASSWORD UNLOCK */
+window.unlock = () => {
+    if (document.getElementById("pw").value === "admin04") {
+        document.getElementById("pwSection").classList.add("hidden");
+        document.getElementById("adminSection").classList.remove("hidden");
+    } else {
+        alert("Wrong password.");
     }
+};
 
-    const d = snap.data();
+/* ITEM SELECTION */
+let selected = [];
 
-    videoPlayer.src = d.videourl || "";
-    videoTitle.textContent = d.name || "Untitled Video";
-    videoDesc.textContent = d.description || "";
-
-    currentItems = d.items || [];
-
-    loadItems();
-}
+window.copyOut = () => {
+    navigator.clipboard.writeText(document.getElementById("output").value);
+};
 
 /* LOAD ITEMS */
-async function loadItems() {
-    const container = document.getElementById("assignedItems");
-    container.innerHTML = "";
+async function load() {
+    const snap = await getDocs(collection(db, "tiktokitems"));
+    const grid = document.getElementById("grid");
 
-    for (const id of currentItems) {
-        const snap = await getDoc(doc(db, "tiktokitems", id));
-        if (!snap.exists()) continue;
+    snap.forEach(docSnap => {
+        const id = docSnap.id;
+        const d = docSnap.data();
 
-        const item = snap.data();
+        const el = document.createElement("div");
+        el.className = "bg-white p-3 rounded-xl shadow cursor-pointer";
+        el.onclick = () => toggle(id, el);
 
-        const pillClass =
-            item.availability === "Available" ? "bg-green-500 text-white" :
-            item.availability === "Low Stock" ? "bg-amber-500 text-white" :
-            item.availability === "Dead" ? "bg-red-500 text-white" :
-            "bg-gray-500 text-white";
-
-        container.innerHTML += `
-            <div class="flex items-center gap-4 p-3 rounded-xl bg-gray-100 shadow">
-                <div class="item-thumb">
-                    <img src="${item.image}">
-                </div>
-
-                <div class="flex flex-col justify-center">
-                    <div class="font-semibold">${item.title}</div>
-                    <div class="text-sm text-gray-600">¥${item.price}</div>
-                </div>
-
-                <div class="ml-auto">
-                    <span class="px-3 py-1 text-xs rounded-full ${pillClass}">
-                        ${item.availability}
-                    </span>
-                </div>
+        el.innerHTML = `
+            <div class="thumb mb-2">
+                <img src="${d.image}">
             </div>
+            <div class="font-semibold">${d.title}</div>
+            <div class="text-sm text-gray-600">¥${d.price}</div>
+            <div class="text-xs text-gray-400">${d.category}</div>
         `;
-    }
+
+        grid.appendChild(el);
+    });
 }
 
-loadVideo();
+window.toggle = (id, element) => {
+    if (selected.includes(id)) {
+        selected = selected.filter(x => x !== id);
+        element.classList.remove("selected");
+    } else {
+        selected.push(id);
+        element.classList.add("selected");
+    }
+
+    document.getElementById("output").value = JSON.stringify(selected);
+};
+
+load();
 </script>
 
 </body>
