@@ -94,7 +94,7 @@
     </div>
 </div>
 
-<!-- FIREBASE DATA LOADING ONLY -->
+<!-- FIREBASE LOADING -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -156,18 +156,34 @@ async function loadVideo() {
     videoTitle.textContent = d.name || "Untitled Video";
     videoDesc.textContent = d.description || "";
 
-    currentItems = d.items || [];
+    /* STRING → ARRAY FIX */
+    let rawItems = d.items;
+
+    if (typeof rawItems === "string") {
+        try {
+            rawItems = rawItems.replace(/^\[|\]$/g, "");
+            currentItems = rawItems.split(",").map(x =>
+                x.replace(/['"]/g, "").trim()
+            );
+        } catch {
+            currentItems = [];
+        }
+    } else {
+        currentItems = rawItems || [];
+    }
 
     loadItems();
 }
 
-/* LOAD ITEMS */
+/* LOAD ITEM DATA FROM tiktokitems */
+import { getDoc as _getDoc, doc as _doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 async function loadItems() {
     const container = document.getElementById("assignedItems");
     container.innerHTML = "";
 
     for (const id of currentItems) {
-        const snap = await getDoc(doc(db, "tiktokitems", id));
+        const snap = await _getDoc(_doc(db, "tiktokitems", id));
         if (!snap.exists()) continue;
 
         const item = snap.data();
