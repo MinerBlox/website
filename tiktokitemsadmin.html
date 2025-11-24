@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>TikTok Items Admin (Password: admin04)</h2>
+
+<input id="pw" type="password" placeholder="Enter admin password">
+<button onclick="unlock()">Unlock</button>
+
+<div id="adminSection" style="display:none;">
+  <h3>Select Items</h3>
+  <div id="grid" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+  <h3>Selected IDs</h3>
+  <textarea id="output" style="width:300px;height:120px;"></textarea><br>
+  <button onclick="copyOut()">Copy</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDTIzoJIvr0mYxw82c9QJJn8rXrMEy7JA",
+  authDomain: "reps-central.firebaseapp.com",
+  projectId: "reps-central",
+  storageBucket: "reps-central.firebasestorage.app",
+  messagingSenderId: "812299387060",
+  appId: "1:812299387060:web:1c93d1e7bf30b65653d7e1"
+};
+initializeApp(firebaseConfig);
+const db = getFirestore();
+
+window.unlock = () => {
+  if(document.getElementById("pw").value === "admin04"){
+    document.getElementById("adminSection").style.display = "block";
+  } else {
+    alert("Wrong password.");
+  }
+};
+
+let selected = [];
+window.copyOut = () => {
+  navigator.clipboard.writeText(JSON.stringify(selected));
+};
+
+async function load(){
+  const snap = await getDocs(collection(db, "tiktokitems"));
+  let html = "";
+  snap.forEach(docSnap => {
+    const id = docSnap.id;
+    const d = docSnap.data();
+    html += `
+      <div onclick="toggle('${id}')" 
+           style='border:1px solid #ccc;padding:6px;margin:4px;cursor:pointer;width:120px;text-align:center;'>
+        <img src="${d.image}" style="width:60px;height:60px;object-fit:cover;"><br>${d.title}
+      </div>
+    `;
+  });
+  document.getElementById("grid").innerHTML = html;
+}
+
+window.toggle = (id) => {
+  if(selected.includes(id)) selected = selected.filter(x => x !== id);
+  else selected.push(id);
+  document.getElementById("output").value = JSON.stringify(selected);
+};
+
+load();
+</script>
+
+</body>
+</html>
