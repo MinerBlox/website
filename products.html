@@ -698,22 +698,25 @@
           const imageUrl =
             img ||
             "https://via.placeholder.com/400x192?text=Item+Image";
-          const buyLink = item.buyLink || "";
+          const itemUrl = item.url || "";
           const safeButton =
-            buyLink && buyLink.trim() !== ""
-              ? `<a href="${buyLink}" target="_blank" rel="noopener noreferrer"
-                   class="text-sm text-accent font-semibold flex items-center hover:underline">
-                   View / Buy
-                   <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                   </svg>
-                 </a>`
-              : `<button class="text-sm text-gray-400 font-medium cursor-not-allowed flex items-center" disabled>
-                   View Details
-                   <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                   </svg>
-                 </button>`;
+  itemUrl && itemUrl.trim() !== ""
+    ? `<a href="${itemUrl}" target="_blank" rel="noopener noreferrer"
+         class="text-sm text-accent font-semibold flex items-center hover:underline">
+         View Details
+         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+         </svg>
+       </a>`
+    : `<button class="text-sm text-gray-400 font-medium cursor-not-allowed flex items-center" disabled>
+         View Details
+         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+         </svg>
+       </button>`;
+
 
           const cardHTML = `
             <div class="card bg-white p-4 rounded-2xl shadow-lg border border-gray-100 flex flex-col">
