@@ -751,6 +751,8 @@
 
 
           const cardHTML = `
+            <div onclick="window.location.href='products.html?id=${item.id}'">` +
+            `
             <div class="card bg-white p-4 rounded-2xl shadow-lg border border-gray-100 flex flex-col">
               <div class="w-full h-48 mb-4 bg-accent rounded-xl flex items-center justify-center overflow-hidden">
                 <img src="${imageUrl}" alt="${title}" class="object-contain w-full h-full bg-white p-2"
