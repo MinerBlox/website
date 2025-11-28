@@ -754,17 +754,17 @@
           const imageUrl =
             img ||
             "https://via.placeholder.com/400x192?text=Item+Image";
-          const itemUrl = item.url || "";
+          const slug = item.slug || item.id || "";
           const safeButton =
-  itemUrl && itemUrl.trim() !== ""
-    ? `<a href="${itemUrl}" target="_blank" rel="noopener noreferrer"
-         class="text-sm text-accent font-semibold flex items-center hover:underline">
+  slug
+    ? `<button class="text-sm text-accent font-semibold flex items-center hover:underline"
+               onclick="window.location.href='products.html?id=${slug}'">
          View Details
          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
          </svg>
-       </a>`
+       </button>`
     : `<button class="text-sm text-gray-400 font-medium cursor-not-allowed flex items-center" disabled>
          View Details
          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -775,7 +775,7 @@
 
 
           const cardHTML = `
-            <div class="card bg-white p-4 rounded-2xl shadow-lg border border-gray-100 flex flex-col">
+            <div class="card bg-white p-4 rounded-2xl shadow-lg border border-gray-100 flex flex-col cursor-pointer" onclick="window.location.href='products.html?id=${item.slug || item.id}'">
               <div class="w-full h-48 mb-4 bg-accent rounded-xl flex items-center justify-center overflow-hidden">
                 <img src="${imageUrl}" alt="${title}" class="object-contain w-full h-full bg-white p-2"
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/400x192?text=No+Image';" />
