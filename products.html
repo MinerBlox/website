@@ -667,13 +667,45 @@
     }
 
     function formatPrice(price) {
-      if (price === undefined || price === null || price === "") return "N/A";
-      if (typeof price === "number") {
-        return "$" + price.toFixed(2);
-      }
+      if (price === undefined || price === null || price === "") return "";
       const p = String(price).trim();
-      if (p.startsWith("$")) return p;
-      return "$" + p;
+      if (!p) return "";
+      if (p.includes("¥")) return p;
+      const numeric = p.replace(/[^\d.]/g, "");
+      if (!numeric) return "";
+      return "¥" + numeric;
+    }
+
+    let usdRatePromise = null;
+
+    function getUsdRate() {
+      if (!usdRatePromise) {
+        usdRatePromise = fetch("https://api.exchangerate.host/latest?base=CNY&symbols=USD")
+          .then((res) => res.json())
+          .then((data) => (data && data.rates && data.rates.USD) ? data.rates.USD : 0.14)
+          .catch(() => 0.14);
+      }
+      return usdRatePromise;
+    }
+
+    function extractNumericYuan(priceStr) {
+      if (!priceStr) return 0;
+      const match = String(priceStr).match(/[\d.]+/);
+      return match ? parseFloat(match[0]) : 0;
+    }
+
+    function attachUsdApprox(cardEl, yuanDisplay) {
+      const usdSpan = cardEl.querySelector(".price-usd");
+      if (!usdSpan) return;
+      const amount = extractNumericYuan(yuanDisplay);
+      if (!amount) {
+        usdSpan.textContent = "";
+        return;
+      }
+      getUsdRate().then((rate) => {
+        const usd = (amount * rate).toFixed(2);
+        usdSpan.textContent = "≈ $" + usd;
+      });
     }
 
     function renderItemsGrid(items, totalCount) {
@@ -728,7 +760,10 @@
                 <h3 class="text-xl font-semibold mb-1 truncate text-primary-dark">${title}</h3>
                 <p class="text-sm text-gray-500 mb-3">${category}</p>
                 <div class="flex justify-between items-center mb-4">
-                  <span class="text-2xl font-bold text-green-600">${price}</span>
+                  <span class="text-2xl font-bold text-green-600">
+                    <span class="price-yuan">${price}</span>
+                    <span class="text-sm text-gray-500 ml-1 align-middle price-usd"></span>
+                  </span>
                   <span class="status-pill ${pillClass}">${pillLabel}</span>
                 </div>
               </div>
@@ -741,6 +776,8 @@
             </div>
           `;
           container.insertAdjacentHTML("beforeend", cardHTML);
+          const cardEl = container.lastElementChild;
+          attachUsdApprox(cardEl, price);
         });
       }
 
