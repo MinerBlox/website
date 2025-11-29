@@ -19,14 +19,16 @@ function convertOrientdigToACBuy(url){
 }
 
 async function fetchQCs(goodsId){
-    try{
-        const gid="WD"+goodsId;
-        const res=await fetch(`https://www.acbuy.com/prefix-api/store-product/product/api/productQc/list?goodsId=${gid}`);
+    try {
+        const res = await fetch(`/api/qc?goodsId=${goodsId}`);
         if(!res.ok) return [];
-        const data=await res.json();
-        return data.data||[];
-    }catch(e){return [];}
+        const data = await res.json();
+        return data.data || [];
+    } catch (e) {
+        return [];
+    }
 }
+
 
 function groupBySku(qcs){
     const g={};
