@@ -6,114 +6,7 @@
   <title>Reps Central Console</title>
 
   <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com">
-// === QC SYSTEM ===
-
-// Convert OrientDig → goodsId
-function convertOrientdig(url){
-    const u = new URL(url);
-    const id = u.searchParams.get("id");
-    return id;
-}
-
-// Fetch QC data from Cloudflare function
-async function fetchQCs(goodsId){
-    try{
-        const res = await fetch(`/api/qc?goodsId=${goodsId}`);
-        if(!res.ok) return [];
-        const data = await res.json();
-        return data.data || [];
-    } catch(e){
-        return [];
-    }
-}
-
-// Group QC images by SKU
-function groupBySku(qcs){
-    const groups = {};
-    qcs.forEach(q=>{
-        if(!groups[q.skuId]) groups[q.skuId] = [];
-        groups[q.skuId].push(q.photoUrl);
-    });
-    return groups;
-}
-
-let currentImages = [];
-let currentIndex = 0;
-
-function openQC(imgs, i){
-    currentImages = imgs;
-    currentIndex = i;
-    document.getElementById("qc-modal-img").src = imgs[i];
-    document.getElementById("qc-modal").classList.remove("hidden");
-}
-
-function closeQC(){
-    document.getElementById("qc-modal").classList.add("hidden");
-}
-
-function prevQC(){
-    currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
-    document.getElementById("qc-modal-img").src = currentImages[currentIndex];
-}
-
-function nextQC(){
-    currentIndex = (currentIndex + 1) % currentImages.length;
-    document.getElementById("qc-modal-img").src = currentImages[currentIndex];
-}
-
-window.addEventListener("load", ()=>{
-    let c = document.getElementById("qc-close");
-    let p = document.getElementById("qc-prev");
-    let n = document.getElementById("qc-next");
-    if(c) c.onclick = closeQC;
-    if(p) p.onclick = prevQC;
-    if(n) n.onclick = nextQC;
-});
-
-// Hook into details loader to fetch QC after loading item
-const oldDetailsLoader = loadDetailsIfNeeded;
-loadDetailsIfNeeded = async function(){
-    await oldDetailsLoader();
-
-    const item = window.loadedItem;
-    if(!item) return;
-
-    const goodsId = convertOrientdig(item.url);
-    document.getElementById("buy-orientdig").href = item.url;
-
-    const qcList = await fetchQCs(goodsId);
-    const qcStatus = document.getElementById("qc-status");
-    const qcWrap = document.getElementById("qc-galleries");
-
-    if(!qcList.length){
-        qcStatus.textContent = "No QCs Available.";
-        return;
-    }
-
-    qcStatus.textContent = "";
-    const grouped = groupBySku(qcList);
-
-    Object.entries(grouped).forEach(([sku, imgs])=>{
-        const wrap = document.createElement("div");
-        wrap.innerHTML = `<h3 class="text-lg font-semibold mb-2">QC Set – ${sku}</h3>`;
-        const grid = document.createElement("div");
-        grid.className = "grid grid-cols-3 gap-2";
-
-        imgs.forEach((url, idx)=>{
-            const im = document.createElement("img");
-            im.src = url;
-            im.className = "rounded shadow cursor-pointer";
-            im.onclick = ()=>openQC(imgs, idx);
-            grid.appendChild(im);
-        });
-
-        wrap.appendChild(grid);
-        qcWrap.appendChild(wrap);
-    });
-};
-
-</script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Tailwind Config -->
   <script>
@@ -612,6 +505,7 @@ loadDetailsIfNeeded = async function(){
           <p id="details-category" class="text-gray-500 mb-2"></p>
           <p id="details-price" class="text-2xl font-bold text-green-600 mb-4"></p>
 <a id="buy-orientdig" href="#" target="_blank" class="mt-3 inline-block px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:opacity-90">BUY ON ORIENTDIG</a>
+<a id="buy-orientdig" href="#" target="_blank" class="mt-3 inline-block px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:opacity-90">BUY ON ORIENTDIG</a>
           <span id="details-status" class="status-pill"></span>
         </div>
       </div>
@@ -1090,5 +984,48 @@ window.addEventListener("load", loadDetailsIfNeeded);
   <img id="qc-modal-img" class="max-w-full max-h-full mx-auto rounded-lg shadow-lg" />
   <button id="qc-next" class="absolute right-4 text-white text-4xl">&#10095;</button>
 </div>
+
+<script>
+// QC system (debug off)
+function convertOrientdig(url){ const u=new URL(url); return u.searchParams.get("id"); }
+
+async function fetchQCs(id){
+ try{ const r=await fetch(`/api/qc?goodsId=${id}`); if(!r.ok) return []; const d=await r.json(); return d.data||[]; }catch(e){ return []; }
+}
+
+function groupBySku(q){ const g={}; q.forEach(i=>{ (g[i.skuId]=g[i.skuId]||[]).push(i.photoUrl); }); return g; }
+
+let cImgs=[],cIndex=0;
+function openQC(imgs,i){ cImgs=imgs; cIndex=i; document.getElementById("qc-modal-img").src=imgs[i]; document.getElementById("qc-modal").classList.remove("hidden"); }
+function closeQC(){ document.getElementById("qc-modal").classList.add("hidden"); }
+function prevQC(){ cIndex=(cIndex-1+cImgs.length)%cImgs.length; document.getElementById("qc-modal-img").src=cImgs[cIndex]; }
+function nextQC(){ cIndex=(cIndex+1)%cImgs.length; document.getElementById("qc-modal-img").src=cImgs[cIndex]; }
+
+window.addEventListener("load",()=>{
+ let c=document.getElementById("qc-close"),p=document.getElementById("qc-prev"),n=document.getElementById("qc-next");
+ if(c) c.onclick=closeQC; if(p) p.onclick=prevQC; if(n) n.onclick=nextQC;
+});
+
+const oldLoad=loadDetailsIfNeeded;
+loadDetailsIfNeeded=async function(){
+ await oldLoad();
+ const item=window.loadedItem; if(!item) return;
+ const gid=convertOrientdig(item.url);
+ document.getElementById("buy-orientdig").href=item.url;
+ const list=await fetchQCs(gid);
+ const st=document.getElementById("qc-status"), cont=document.getElementById("qc-galleries");
+ if(!list.length){ st.textContent="No QCs Available."; return; }
+ st.textContent="";
+ const groups=groupBySku(list);
+ for(const [sku,imgs] of Object.entries(groups)){
+  const wrap=document.createElement("div");
+  wrap.innerHTML=`<h3 class="text-lg font-semibold mb-2">QC Set – ${sku}</h3>`;
+  const grid=document.createElement("div"); grid.className="grid grid-cols-3 gap-2";
+  imgs.forEach((u,i)=>{ const im=document.createElement("img"); im.src=u; im.className="rounded shadow cursor-pointer"; im.onclick=()=>openQC(imgs,i); grid.appendChild(im); });
+  wrap.appendChild(grid);
+  cont.appendChild(wrap);
+ }
+};
+</script>
 </body>
 </html>
