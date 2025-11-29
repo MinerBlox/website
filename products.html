@@ -6,7 +6,89 @@
   <title>Reps Central Console</title>
 
   <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com">
+// QC logic injected
+function convertOrientdigToACBuy(url){
+    const u=new URL(url);
+    const platform=u.searchParams.get("platform");
+    const id=u.searchParams.get("id");
+    let source="TB";
+    if(platform==="WEIDIAN") source="WD";
+    if(platform==="ALI_1688") source="AL";
+    return {goodsId:id};
+}
+
+async function fetchQCs(goodsId){
+    try{
+        const gid="WD"+goodsId;
+        const res=await fetch(`https://www.acbuy.com/prefix-api/store-product/product/api/productQc/list?goodsId=${gid}`);
+        if(!res.ok) return [];
+        const data=await res.json();
+        return data.data||[];
+    }catch(e){return [];}
+}
+
+function groupBySku(qcs){
+    const g={};
+    qcs.forEach(q=>{ if(!g[q.skuId]) g[q.skuId]=[]; g[q.skuId].push(q.photoUrl); });
+    return g;
+}
+
+let currentImages=[],currentIndex=0;
+function openQC(images,i){
+    currentImages=images; currentIndex=i;
+    document.getElementById("qc-modal-img").src=images[i];
+    document.getElementById("qc-modal").classList.remove("hidden");
+}
+function closeQC(){document.getElementById("qc-modal").classList.add("hidden");}
+function prevQC(){currentIndex=(currentIndex-1+currentImages.length)%currentImages.length;
+    document.getElementById("qc-modal-img").src=currentImages[currentIndex];}
+function nextQC(){currentIndex=(currentIndex+1)%currentImages.length;
+    document.getElementById("qc-modal-img").src=currentImages[currentIndex];}
+
+window.addEventListener("load",()=>{
+ document.getElementById("qc-close").onclick=closeQC;
+ document.getElementById("qc-prev").onclick=prevQC;
+ document.getElementById("qc-next").onclick=nextQC;
+});
+
+// Hook into details loader
+const origLoadDetails = loadDetailsIfNeeded;
+loadDetailsIfNeeded = async function(){
+    await origLoadDetails();
+    const item = window.loadedItem;
+    if(!item) return;
+
+    const orient = item.url;
+    document.getElementById("buy-orientdig").href = orient;
+
+    const {goodsId} = convertOrientdigToACBuy(orient);
+    const qcs = await fetchQCs(goodsId);
+
+    const st=document.getElementById("qc-status");
+    const cont=document.getElementById("qc-galleries");
+
+    if(!qcs.length){ st.textContent="No QCs Available."; return; }
+    st.textContent="";
+
+    const groups = groupBySku(qcs);
+    Object.entries(groups).forEach(([sku,imgs])=>{
+        const wrap=document.createElement("div");
+        wrap.innerHTML=`<h3 class="text-lg font-semibold mb-2">QC Set – ${sku}</h3>`;
+        const grid=document.createElement("div");
+        grid.className="grid grid-cols-3 gap-2";
+        imgs.forEach((u,i)=>{
+            const im=document.createElement("img");
+            im.src=u; im.className="rounded shadow cursor-pointer";
+            im.onclick=()=>openQC(imgs,i);
+            grid.appendChild(im);
+        });
+        wrap.appendChild(grid);
+        cont.appendChild(wrap);
+    });
+};
+
+</script>
 
   <!-- Tailwind Config -->
   <script>
@@ -504,13 +586,13 @@
           <h2 id="details-title" class="text-3xl font-bold mb-4"></h2>
           <p id="details-category" class="text-gray-500 mb-2"></p>
           <p id="details-price" class="text-2xl font-bold text-green-600 mb-4"></p>
+<a id="buy-orientdig" href="#" target="_blank" class="mt-4 inline-block px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:opacity-90">BUY ON ORIENTDIG</a>
           <span id="details-status" class="status-pill"></span>
         </div>
       </div>
 
-      <div class="mt-6 p-6 border border-gray-200 rounded-xl text-center text-gray-400">
-        QCs coming soon!
-      </div>
+      <div id="qc-status" class="text-gray-500 mt-6">Fetching QCs...</div>
+<div id="qc-galleries" class="mt-4 grid gap-6"></div>
     </div>
 
     <!-- HOME VIEW -->
@@ -975,5 +1057,13 @@ async function loadDetailsIfNeeded(){
 window.addEventListener("load", loadDetailsIfNeeded);
 </script>
 
+
+<!-- QC MODAL -->
+<div id="qc-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-50">
+  <button id="qc-close" class="absolute top-4 right-4 text-white text-3xl">&times;</button>
+  <button id="qc-prev" class="absolute left-4 text-white text-3xl">&#10094;</button>
+  <img id="qc-modal-img" class="max-w-full max-h-full mx-auto rounded-lg shadow-lg" />
+  <button id="qc-next" class="absolute right-4 text-white text-3xl">&#10095;</button>
+</div>
 </body>
 </html>
