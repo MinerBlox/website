@@ -894,92 +894,167 @@
 
   </script>
 
-  <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  onSnapshot,
-  query,
-  where,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  
+<script>
+// DEBUG QC SYSTEM
+console.log("QC DEBUG: script loaded");
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDTIzoJlvrr0mYxwx82cQ9JJn8rXrMEy7JA",
-  authDomain: "reps-central.firebaseapp.com",
-  projectId: "reps-central",
-  storageBucket: "reps-central.firebasestorage.app",
-  messagingSenderId: "812299387060",
-  appId: "1:812299387060:web:1c93d1e7bf30b565536d7e1",
-  measurementId: "G-8T7F9F1FZ9"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const itemsCol = collection(db, "products");
-onSnapshot(itemsCol, (snapshot) => {
-  const items = snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data()
-  }));
-  if (window.updateItemsFromFirestore) {
-    window.updateItemsFromFirestore(items);
-  }
-});
-
-// ========== DETAILS VIEW ==========
-
-function getParam(name) {
-  const url = new URL(window.location.href);
-  return url.searchParams.get(name);
+// Convert OrientDig → goodsId
+function convertOrientdig(url) {
+  console.log("QC DEBUG: convertOrientdig url=", url);
+  const u = new URL(url);
+  const id = u.searchParams.get("id");
+  console.log("QC DEBUG: extracted id=", id);
+  return id;
 }
 
-async function loadDetailsIfNeeded() {
-  const slug = getParam("id");
-  if (!slug) return;
+// Fetch QC data
+async function fetchQCs(id) {
+  console.log("QC DEBUG: fetchQCs id=", id);
+  try {
+    const r = await fetch(`/api/qc?goodsId=${id}`);
+    console.log("QC DEBUG: fetch status", r.status);
+    const d = await r.json();
+    console.log("QC DEBUG: fetch data", d);
+    return d.data || [];
+  } catch (e) {
+    console.error("QC DEBUG ERROR:", e);
+    return [];
+  }
+}
 
-  document.getElementById("data-view").classList.add("hidden");
-  document.getElementById("details-view").classList.remove("hidden");
+// Group images by SKU
+function groupBySku(list) {
+  console.log("QC DEBUG: groupBySku list len=", list.length);
+  const g = {};
+  list.forEach(i => {
+    (g[i.skuId] = g[i.skuId] || []).push(i.photoUrl);
+  });
+  console.log("QC DEBUG: grouped", g);
+  return g;
+}
 
-  const q = query(collection(db, "products"), where("slug", "==", slug));
-  const snap = await getDocs(q);
+// Modal logic (unchanged)
+let currentImgs = [];
+let currentIndex = 0;
 
-  if (snap.empty) {
-    document.getElementById("details-title").textContent = "Item not found.";
+function openQC(imgs, i) {
+  console.log("QC DEBUG: openQC", i);
+  currentImgs = imgs;
+  currentIndex = i;
+  document.getElementById("qc-modal-img").src = imgs[i];
+  document.getElementById("qc-modal").classList.remove("hidden");
+}
+
+function closeQC() {
+  console.log("QC DEBUG: closeQC");
+  document.getElementById("qc-modal").classList.add("hidden");
+}
+
+function prevQC() {
+  currentIndex = (currentIndex - 1 + currentImgs.length) % currentImgs.length;
+  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
+}
+
+function nextQC() {
+  currentIndex = (currentIndex + 1) % currentImgs.length;
+  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
+}
+
+document.getElementById("qc-close").onclick = closeQC;
+document.getElementById("qc-prev").onclick = prevQC;
+document.getElementById("qc-next").onclick = nextQC;
+
+// Carousel state
+const carouselPositions = {};
+
+function carouselPrev(key) {
+  console.log("QC DEBUG: carouselPrev", key);
+  const pos = carouselPositions[key];
+  pos.index = (pos.index - 1 + pos.imgs.length) % pos.imgs.length;
+  updateCarouselTransform(key);
+}
+
+function carouselNext(key) {
+  console.log("QC DEBUG: carouselNext", key);
+  const pos = carouselPositions[key];
+  pos.index = (pos.index + 1) % pos.imgs.length;
+  updateCarouselTransform(key);
+}
+
+function updateCarouselTransform(key) {
+  const el = document.querySelector(`.qc-carousel[data-key="${key}"]`);
+  const index = carouselPositions[key].index;
+  el.style.transform = `translateX(-${index * 100}%)`;
+}
+
+// OVERRIDE loadDetailsIfNeeded AT TOP LEVEL
+console.log("QC DEBUG: attempting override loadDetailsIfNeeded", window.loadDetailsIfNeeded);
+const oldLoad = window.loadDetailsIfNeeded;
+
+window.loadDetailsIfNeeded = async function () {
+  console.log("QC DEBUG: overridden loadDetailsIfNeeded running");
+
+  await oldLoad();
+
+  const item = window.loadedItem;
+  console.log("QC DEBUG: loadedItem=", item);
+  if (!item) return;
+
+  const gid = convertOrientdig(item.url);
+  const list = await fetchQCs(gid);
+
+  const status = document.getElementById("qc-status");
+  const container = document.getElementById("qc-galleries");
+
+  if (!list.length) {
+    status.textContent = "No QCs Available.";
+    console.log("QC DEBUG: no QC results");
     return;
   }
 
-  const item = snap.docs[0].data();
-  window.loadedItem = item;
+  status.textContent = "";
+  container.innerHTML = "";
 
-  document.getElementById("details-title").textContent = item.title;
-  document.getElementById("details-category").textContent = item.category || "";
-  document.getElementById("details-image").src = item.image || item.imageUrl || "";
+  const groups = groupBySku(list);
 
-  const price = formatPrice(item.price);
-  document.getElementById("details-price").innerHTML =
-    price + ' <span class="text-sm text-gray-500" id="details-usd"></span>';
+  for (const [sku, imgs] of Object.entries(groups)) {
+    carouselPositions[sku] = { index: 0, imgs };
 
-  const amount = extractNumericYuan(price);
-  getUsdRate().then(rate => {
-    const usd = (amount * rate).toFixed(2);
-    document.getElementById("details-usd").textContent = "≈ $" + usd;
-  });
+    const card = document.createElement("div");
+    card.className = "bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col";
 
-  const status = item.status || item.availability || "Available";
-  const pill = document.getElementById("details-status");
-  pill.textContent = mapStatusLabel(status);
-  pill.classList.add(mapStatusToClass(status));
-}
+    card.innerHTML = `
+      <div class="relative w-full h-40 overflow-hidden rounded-lg">
+        <div class="qc-carousel flex transition-transform duration-300" data-key="${sku}">
+          ${imgs
+            .map(
+              (url, i) => `
+              <img 
+                src="${url}" 
+                class="w-full h-40 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                onclick='openQC(${JSON.stringify(imgs)}, ${i})'
+              />
+            `
+            )
+            .join("")}
+        </div>
 
-// EXPOSE globally so QC override can see it
-window.loadDetailsIfNeeded = loadDetailsIfNeeded;
+        <button onclick="carouselPrev('${sku}')"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">‹</button>
 
-// trigger on load
-window.addEventListener("load", loadDetailsIfNeeded);
+        <button onclick="carouselNext('${sku}')"
+          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">›</button>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-3 text-center">ACBuy</p>
+    `;
+
+    container.appendChild(card);
+  }
+};
 </script>
+
 
 
 <!-- QC MODAL -->
