@@ -986,7 +986,6 @@ window.addEventListener("load", loadDetailsIfNeeded);
   <button id="qc-next" class="absolute right-4 text-white text-4xl">&#10095;</button>
 </div>
 
-<script>
 <!-- === UPDATED QC SYSTEM === -->
 <script>
 // Convert OrientDig → goodsId
@@ -1043,12 +1042,9 @@ function nextQC() {
 }
 
 window.addEventListener("load", () => {
-  const c = document.getElementById("qc-close"),
-        p = document.getElementById("qc-prev"),
-        n = document.getElementById("qc-next");
-  if (c) c.onclick = closeQC;
-  if (p) p.onclick = prevQC;
-  if (n) n.onclick = nextQC;
+  document.getElementById("qc-close").onclick = closeQC;
+  document.getElementById("qc-prev").onclick = prevQC;
+  document.getElementById("qc-next").onclick = nextQC;
 });
 
 // Carousel state
@@ -1067,20 +1063,20 @@ function carouselNext(key) {
 }
 
 function updateCarouselTransform(key) {
-  const car = document.querySelector(`.qc-carousel[data-key="${key}"]`);
+  const el = document.querySelector(`.qc-carousel[data-key="${key}"]`);
   const index = carouselPositions[key].index;
-  car.style.transform = `translateX(-${index * 100}%)`;
+  el.style.transform = `translateX(-${index * 100}%)`;
 }
 
 // Override loadDetailsIfNeeded
 const oldLoad = loadDetailsIfNeeded;
+
 loadDetailsIfNeeded = async function () {
   await oldLoad();
 
   const item = window.loadedItem;
   if (!item) return;
 
-  // FIX: remove duplicate button → ensure this is the only one
   document.getElementById("buy-orientdig").href = item.url;
 
   const gid = convertOrientdig(item.url);
@@ -1102,38 +1098,35 @@ loadDetailsIfNeeded = async function () {
   for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
 
-    // Save carousel state per QC group
     carouselPositions[key] = { index: 0, imgs };
 
-    // Create QC card (matches product grid)
     const card = document.createElement("div");
     card.className =
       "bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col";
 
-    // Carousel wrapper
     card.innerHTML = `
       <div class="relative w-full h-40 overflow-hidden rounded-lg">
         <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
           ${imgs
             .map(
               (url, i) => `
-            <img 
-              src="${url}" 
-              class="w-full h-40 object-cover rounded-lg flex-shrink-0 cursor-pointer"
-              onclick='openQC(${JSON.stringify(imgs)}, ${i})'
-            />`
+              <img 
+                src="${url}" 
+                class="w-full h-40 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                onclick='openQC(${JSON.stringify(imgs)}, ${i})'
+              />
+            `
             )
             .join("")}
         </div>
 
-        <!-- Arrows -->
-        <button onclick="carouselPrev('${key}')"
-          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-40 text-white rounded-full px-3 py-1">
+        <button onclick="carouselPrev('${key}')" 
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
           ‹
         </button>
 
         <button onclick="carouselNext('${key}')"
-          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-40 text-white rounded-full px-3 py-1">
+          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
           ›
         </button>
       </div>
@@ -1145,5 +1138,3 @@ loadDetailsIfNeeded = async function () {
   }
 };
 </script>
-</body>
-</html>
