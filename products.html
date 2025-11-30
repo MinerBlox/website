@@ -986,177 +986,45 @@ window.addEventListener("load", loadDetailsIfNeeded);
 </div>
 
 <script>
+// QC system (debug off)
+function convertOrientdig(url){ const u=new URL(url); return u.searchParams.get("id"); }
 
-// === QC DEBUG MODE ===
-console.log("[QC] script loaded");
-
-function convertOrientdig(url){
-  try {
-    const u = new URL(url);
-    const id = u.searchParams.get("id");
-    console.log("[QC] convertOrientdig url =", url, "id =", id);
-    return id;
-  } catch (e) {
-    console.error("[QC] convertOrientdig error:", e, "url =", url);
-    return null;
-  }
+async function fetchQCs(id){
+ try{ const r=await fetch(`/api/qc?goodsId=${id}`); if(!r.ok) return []; const d=await r.json(); return d.data||[]; }catch(e){ return []; }
 }
 
-async function fetchQCs(goodsId){
-  console.log("[QC] fetchQCs called with goodsId =", goodsId);
-  if(!goodsId){
-    console.warn("[QC] fetchQCs: no goodsId, aborting");
-    return [];
-  }
-  try{
-    const endpoint = `/api/qc?goodsId=${goodsId}`;
-    console.log("[QC] fetching from", endpoint);
-    const res = await fetch(endpoint);
-    console.log("[QC] fetch status =", res.status);
-    const text = await res.text();
-    console.log("[QC] raw QC response text =", text);
-    let data;
-    try{
-      data = JSON.parse(text);
-    } catch(e){
-      console.error("[QC] JSON parse error:", e);
-      return [];
-    }
-    console.log("[QC] parsed QC response object =", data);
-    return data.data || [];
-  } catch(e){
-    console.error("[QC] fetchQCs exception:", e);
-    return [];
-  }
-}
+function groupBySku(q){ const g={}; q.forEach(i=>{ (g[i.skuId]=g[i.skuId]||[]).push(i.photoUrl); }); return g; }
 
-function groupBySku(q){
-  console.log("[QC] grouping", q.length, "entries by skuId");
-  const groups = {};
-  q.forEach(i=>{
-    const key = i.skuId || "UNKNOWN_SKU";
-    if(!groups[key]) groups[key] = [];
-    groups[key].push(i.photoUrl);
-  });
-  console.log("[QC] grouped result keys =", Object.keys(groups));
-  return groups;
-}
+let cImgs=[],cIndex=0;
+function openQC(imgs,i){ cImgs=imgs; cIndex=i; document.getElementById("qc-modal-img").src=imgs[i]; document.getElementById("qc-modal").classList.remove("hidden"); }
+function closeQC(){ document.getElementById("qc-modal").classList.add("hidden"); }
+function prevQC(){ cIndex=(cIndex-1+cImgs.length)%cImgs.length; document.getElementById("qc-modal-img").src=cImgs[cIndex]; }
+function nextQC(){ cIndex=(cIndex+1)%cImgs.length; document.getElementById("qc-modal-img").src=cImgs[cIndex]; }
 
-let qcImagesCurrent = [];
-let qcIndexCurrent = 0;
-
-function openQC(imgs, i){
-  console.log("[QC] openQC", i, "of", imgs.length);
-  qcImagesCurrent = imgs || [];
-  qcIndexCurrent = i || 0;
-  const imgEl = document.getElementById("qc-modal-img");
-  const modal = document.getElementById("qc-modal");
-  if(!imgEl || !modal){
-    console.warn("[QC] openQC: modal elements missing");
-    return;
-  }
-  imgEl.src = qcImagesCurrent[qcIndexCurrent];
-  modal.classList.remove("hidden");
-}
-
-function closeQC(){
-  console.log("[QC] closeQC");
-  const modal = document.getElementById("qc-modal");
-  if(modal) modal.classList.add("hidden");
-}
-
-function prevQC(){
-  if(!qcImagesCurrent.length) return;
-  qcIndexCurrent = (qcIndexCurrent - 1 + qcImagesCurrent.length) % qcImagesCurrent.length;
-  console.log("[QC] prevQC -> index", qcIndexCurrent);
-  const imgEl = document.getElementById("qc-modal-img");
-  if(imgEl) imgEl.src = qcImagesCurrent[qcIndexCurrent];
-}
-
-function nextQC(){
-  if(!qcImagesCurrent.length) return;
-  qcIndexCurrent = (qcIndexCurrent + 1) % qcImagesCurrent.length;
-  console.log("[QC] nextQC -> index", qcIndexCurrent);
-  const imgEl = document.getElementById("qc-modal-img");
-  if(imgEl) imgEl.src = qcImagesCurrent[qcIndexCurrent];
-}
-
-window.addEventListener("load", ()=>{
-  console.log("[QC] window load handler running");
-  const c = document.getElementById("qc-close");
-  const p = document.getElementById("qc-prev");
-  const n = document.getElementById("qc-next");
-  console.log("[QC] modal buttons:", {close: !!c, prev: !!p, next: !!n});
-  if(c) c.onclick = closeQC;
-  if(p) p.onclick = prevQC;
-  if(n) n.onclick = nextQC;
+window.addEventListener("load",()=>{
+ let c=document.getElementById("qc-close"),p=document.getElementById("qc-prev"),n=document.getElementById("qc-next");
+ if(c) c.onclick=closeQC; if(p) p.onclick=prevQC; if(n) n.onclick=nextQC;
 });
 
-// Hook into details loader
-const originalLoadDetails = typeof loadDetailsIfNeeded === "function" ? loadDetailsIfNeeded : async function(){
-  console.warn("[QC] loadDetailsIfNeeded not defined when QC script ran.");
-};
-
-loadDetailsIfNeeded = async function(){
-  console.log("[QC] override loadDetailsIfNeeded called");
-  await originalLoadDetails();
-  console.log("[QC] after original details load, window.loadedItem =", window.loadedItem);
-
-  const item = window.loadedItem;
-  if(!item){
-    console.warn("[QC] No loadedItem found, aborting QC load.");
-    return;
-  }
-
-  try{
-    const qcStatus = document.getElementById("qc-status");
-    const qcWrap = document.getElementById("qc-galleries");
-    console.log("[QC] qc-status exists =", !!qcStatus, "qc-galleries exists =", !!qcWrap);
-
-    if(!qcStatus || !qcWrap){
-      console.warn("[QC] QC DOM nodes missing, not rendering.");
-      return;
-    }
-
-    const goodsId = convertOrientdig(item.url);
-    console.log("[QC] goodsId from item.url =", goodsId, "url =", item.url);
-    document.getElementById("buy-orientdig").href = item.url;
-
-    const qcList = await fetchQCs(goodsId);
-    console.log("[QC] qcList length =", qcList.length);
-
-    if(!qcList.length){
-      qcStatus.textContent = "No QCs Available.";
-      return;
-    }
-
-    qcStatus.textContent = "";
-    const grouped = groupBySku(qcList);
-
-    // Clear any old content
-    qcWrap.innerHTML = "";
-
-    Object.entries(grouped).forEach(([sku, imgs])=>{
-      console.log("[QC] rendering group", sku, "images:", imgs.length);
-      const wrap = document.createElement("div");
-      wrap.innerHTML = `<h3 class="text-lg font-semibold mb-2">QC Set – ${sku}</h3>`;
-      const grid = document.createElement("div");
-      grid.className = "grid grid-cols-3 gap-2";
-
-      imgs.forEach((url, idx)=>{
-        const im = document.createElement("img");
-        im.src = url;
-        im.className = "rounded shadow cursor-pointer";
-        im.onclick = ()=>openQC(imgs, idx);
-        grid.appendChild(im);
-      });
-
-      wrap.appendChild(grid);
-      qcWrap.appendChild(wrap);
-    });
-  } catch(e){
-    console.error("[QC] error in overridden loadDetailsIfNeeded:", e);
-  }
+const oldLoad=loadDetailsIfNeeded;
+loadDetailsIfNeeded=async function(){
+ await oldLoad();
+ const item=window.loadedItem; if(!item) return;
+ const gid=convertOrientdig(item.url);
+ document.getElementById("buy-orientdig").href=item.url;
+ const list=await fetchQCs(gid);
+ const st=document.getElementById("qc-status"), cont=document.getElementById("qc-galleries");
+ if(!list.length){ st.textContent="No QCs Available."; return; }
+ st.textContent="";
+ const groups=groupBySku(list);
+ for(const [sku,imgs] of Object.entries(groups)){
+  const wrap=document.createElement("div");
+  wrap.innerHTML=`<h3 class="text-lg font-semibold mb-2">QC Set – ${sku}</h3>`;
+  const grid=document.createElement("div"); grid.className="grid grid-cols-3 gap-2";
+  imgs.forEach((u,i)=>{ const im=document.createElement("img"); im.src=u; im.className="rounded shadow cursor-pointer"; im.onclick=()=>openQC(imgs,i); grid.appendChild(im); });
+  wrap.appendChild(grid);
+  cont.appendChild(wrap);
+ }
 };
 </script>
 </body>
