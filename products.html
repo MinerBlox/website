@@ -980,10 +980,6 @@ window.loadDetailsIfNeeded = loadDetailsIfNeeded;
 // trigger on load
 window.addEventListener("load", loadDetailsIfNeeded);
 </script>
-<script>
-window.loadDetailsIfNeeded = loadDetailsIfNeeded;
-</script>
-
 
 
 <!-- QC MODAL -->
@@ -996,6 +992,8 @@ window.loadDetailsIfNeeded = loadDetailsIfNeeded;
 
 <!-- === UPDATED QC SYSTEM === -->
 <script>
+window.addEventListener('load',()=>{
+
 // Convert OrientDig → goodsId
 function convertOrientdig(url) {
   const u = new URL(url);
@@ -1145,4 +1143,6 @@ loadDetailsIfNeeded = async function () {
     container.appendChild(card);
   }
 };
+
+});
 </script>
