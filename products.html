@@ -951,6 +951,7 @@ async function loadDetailsIfNeeded(){
   }
 
   const item = snap.docs[0].data();
+  window.loadedItem = item;
 
   document.getElementById("details-title").textContent = item.title;
   document.getElementById("details-category").textContent = item.category || "";
