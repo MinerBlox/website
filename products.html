@@ -987,45 +987,162 @@ window.addEventListener("load", loadDetailsIfNeeded);
 </div>
 
 <script>
-// QC system (debug off)
-function convertOrientdig(url){ const u=new URL(url); return u.searchParams.get("id"); }
-
-async function fetchQCs(id){
- try{ const r=await fetch(`/api/qc?goodsId=${id}`); if(!r.ok) return []; const d=await r.json(); return d.data||[]; }catch(e){ return []; }
+<!-- === UPDATED QC SYSTEM === -->
+<script>
+// Convert OrientDig → goodsId
+function convertOrientdig(url) {
+  const u = new URL(url);
+  return u.searchParams.get("id");
 }
 
-function groupBySku(q){ const g={}; q.forEach(i=>{ (g[i.skuId]=g[i.skuId]||[]).push(i.photoUrl); }); return g; }
+// Fetch QC data
+async function fetchQCs(id) {
+  try {
+    const r = await fetch(`/api/qc?goodsId=${id}`);
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.data || [];
+  } catch (e) {
+    console.error("QC error", e);
+    return [];
+  }
+}
 
-let cImgs=[],cIndex=0;
-function openQC(imgs,i){ cImgs=imgs; cIndex=i; document.getElementById("qc-modal-img").src=imgs[i]; document.getElementById("qc-modal").classList.remove("hidden"); }
-function closeQC(){ document.getElementById("qc-modal").classList.add("hidden"); }
-function prevQC(){ cIndex=(cIndex-1+cImgs.length)%cImgs.length; document.getElementById("qc-modal-img").src=cImgs[cIndex]; }
-function nextQC(){ cIndex=(cIndex+1)%cImgs.length; document.getElementById("qc-modal-img").src=cImgs[cIndex]; }
+// Group images by SKU
+function groupBySku(list) {
+  const g = {};
+  list.forEach(i => {
+    (g[i.skuId] = g[i.skuId] || []).push(i.photoUrl);
+  });
+  return g;
+}
 
-window.addEventListener("load",()=>{
- let c=document.getElementById("qc-close"),p=document.getElementById("qc-prev"),n=document.getElementById("qc-next");
- if(c) c.onclick=closeQC; if(p) p.onclick=prevQC; if(n) n.onclick=nextQC;
+// Modal logic
+let currentImgs = [];
+let currentIndex = 0;
+
+function openQC(imgs, i) {
+  currentImgs = imgs;
+  currentIndex = i;
+  document.getElementById("qc-modal-img").src = imgs[i];
+  document.getElementById("qc-modal").classList.remove("hidden");
+}
+
+function closeQC() {
+  document.getElementById("qc-modal").classList.add("hidden");
+}
+
+function prevQC() {
+  currentIndex = (currentIndex - 1 + currentImgs.length) % currentImgs.length;
+  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
+}
+
+function nextQC() {
+  currentIndex = (currentIndex + 1) % currentImgs.length;
+  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
+}
+
+window.addEventListener("load", () => {
+  const c = document.getElementById("qc-close"),
+        p = document.getElementById("qc-prev"),
+        n = document.getElementById("qc-next");
+  if (c) c.onclick = closeQC;
+  if (p) p.onclick = prevQC;
+  if (n) n.onclick = nextQC;
 });
 
-const oldLoad=loadDetailsIfNeeded;
-loadDetailsIfNeeded=async function(){
- await oldLoad();
- const item=window.loadedItem; if(!item) return;
- const gid=convertOrientdig(item.url);
- document.getElementById("buy-orientdig").href=item.url;
- const list=await fetchQCs(gid);
- const st=document.getElementById("qc-status"), cont=document.getElementById("qc-galleries");
- if(!list.length){ st.textContent="No QCs Available."; return; }
- st.textContent="";
- const groups=groupBySku(list);
- for(const [sku,imgs] of Object.entries(groups)){
-  const wrap=document.createElement("div");
-  wrap.innerHTML=`<h3 class="text-lg font-semibold mb-2">QC Set – ${sku}</h3>`;
-  const grid=document.createElement("div"); grid.className="grid grid-cols-3 gap-2";
-  imgs.forEach((u,i)=>{ const im=document.createElement("img"); im.src=u; im.className="rounded shadow cursor-pointer"; im.onclick=()=>openQC(imgs,i); grid.appendChild(im); });
-  wrap.appendChild(grid);
-  cont.appendChild(wrap);
- }
+// Carousel state
+const carouselPositions = {};
+
+function carouselPrev(key) {
+  const pos = carouselPositions[key];
+  pos.index = (pos.index - 1 + pos.imgs.length) % pos.imgs.length;
+  updateCarouselTransform(key);
+}
+
+function carouselNext(key) {
+  const pos = carouselPositions[key];
+  pos.index = (pos.index + 1) % pos.imgs.length;
+  updateCarouselTransform(key);
+}
+
+function updateCarouselTransform(key) {
+  const car = document.querySelector(`.qc-carousel[data-key="${key}"]`);
+  const index = carouselPositions[key].index;
+  car.style.transform = `translateX(-${index * 100}%)`;
+}
+
+// Override loadDetailsIfNeeded
+const oldLoad = loadDetailsIfNeeded;
+loadDetailsIfNeeded = async function () {
+  await oldLoad();
+
+  const item = window.loadedItem;
+  if (!item) return;
+
+  // FIX: remove duplicate button → ensure this is the only one
+  document.getElementById("buy-orientdig").href = item.url;
+
+  const gid = convertOrientdig(item.url);
+  const list = await fetchQCs(gid);
+
+  const status = document.getElementById("qc-status");
+  const container = document.getElementById("qc-galleries");
+
+  if (!list.length) {
+    status.textContent = "No QCs Available.";
+    return;
+  }
+
+  status.textContent = "";
+  container.innerHTML = "";
+
+  const groups = groupBySku(list);
+
+  for (const [sku, imgs] of Object.entries(groups)) {
+    const key = sku;
+
+    // Save carousel state per QC group
+    carouselPositions[key] = { index: 0, imgs };
+
+    // Create QC card (matches product grid)
+    const card = document.createElement("div");
+    card.className =
+      "bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col";
+
+    // Carousel wrapper
+    card.innerHTML = `
+      <div class="relative w-full h-40 overflow-hidden rounded-lg">
+        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
+          ${imgs
+            .map(
+              (url, i) => `
+            <img 
+              src="${url}" 
+              class="w-full h-40 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+              onclick='openQC(${JSON.stringify(imgs)}, ${i})'
+            />`
+            )
+            .join("")}
+        </div>
+
+        <!-- Arrows -->
+        <button onclick="carouselPrev('${key}')"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-40 text-white rounded-full px-3 py-1">
+          ‹
+        </button>
+
+        <button onclick="carouselNext('${key}')"
+          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-40 text-white rounded-full px-3 py-1">
+          ›
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-3 text-center">ACBuy</p>
+    `;
+
+    container.appendChild(card);
+  }
 };
 </script>
 </body>
