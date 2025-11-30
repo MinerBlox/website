@@ -20,10 +20,13 @@ export async function onRequest(context) {
       }
     });
 
-    const data = await r.json();
-    return new Response(JSON.stringify(data), {
+    // ⚠ DEBUG: read response as text, not JSON
+    const raw = await r.text();
+
+    return new Response(JSON.stringify({ raw }), {
       headers: { "Content-Type": "application/json" }
     });
+
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
