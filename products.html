@@ -973,6 +973,7 @@ async function loadDetailsIfNeeded(){
   pill.classList.add(mapStatusToClass(status));
 }
 
+window.loadDetailsIfNeeded = loadDetailsIfNeeded;
 window.addEventListener("load", loadDetailsIfNeeded);
 </script>
 
