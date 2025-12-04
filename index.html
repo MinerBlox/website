@@ -505,7 +505,7 @@ function attachUsdApprox(cardEl, yuan){
           ></path>
         </svg>
         <img
-          src="https://github.com/MinerBlox/website/blob/main/images/sitelogo.png?raw=true"
+          src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/sitelogo.png"
           alt="Reps Central Logo"
           class="h-10 cursor-pointer"
           onclick="navigate('home')"
@@ -523,7 +523,7 @@ function attachUsdApprox(cardEl, yuan){
         >
           <div class="cursor-pointer mb-6" onclick="navigate('home')">
             <img
-              src="https://github.com/MinerBlox/website/blob/main/images/sitelogo.png?raw=true"
+              src="https://raw.githubusercontent.com/MinerBlox/website/refs/heads/main/images/sitelogo.png"
               alt="Reps Central Logo"
               class="w-48 h-auto"
             />
@@ -838,10 +838,9 @@ function attachUsdApprox(cardEl, yuan){
     }
 
     function formatPrice(price) {
-      if (price === undefined || price === null || price === "") return "N/A";
-      if (typeof price === "number") {
-        return "$" + price.toFixed(2);
-      }
+    if (!price) return "¥0";
+    return "¥" + parseInt(price);
+}
       const p = String(price).trim();
       if (p.startsWith("$")) return p;
       return "$" + p;
@@ -865,7 +864,7 @@ function attachUsdApprox(cardEl, yuan){
 
       selection.forEach((item) => {
         const title = item.title || "Untitled item";
-        const price = "¥" + item.price;
+        const price = formatPrice(item.price);
         const status = item.status || item.availability || "available";
         const pillClass = mapStatusToClass(status);
         const pillLabel = mapStatusLabel(status);
