@@ -35,6 +35,40 @@ function attachUsdApprox(cardEl, yuan){
 
   <!-- Tailwind Config -->
   <script>
+
+    // --- CURRENCY HELPERS (copied from products.html) ---
+    let usdRatePromise = null;
+
+    function getUsdRate() {
+      if (!usdRatePromise) {
+        usdRatePromise = fetch("https://api.exchangerate.host/latest?base=CNY&symbols=USD")
+          .then((res) => res.json())
+          .then((data) => (data && data.rates && data.rates.USD) ? data.rates.USD : 0.14)
+          .catch(() => 0.14);
+      }
+      return usdRatePromise;
+    }
+
+    function extractNumericYuan(priceStr) {
+      if (!priceStr) return 0;
+      const match = String(priceStr).match(/[\d.]+/);
+      return match ? parseFloat(match[0]) : 0;
+    }
+
+    function attachUsdApprox(cardEl, yuanDisplay) {
+      const usdSpan = cardEl.querySelector(".price-usd");
+      if (!usdSpan) return;
+      const amount = extractNumericYuan(yuanDisplay);
+      if (!amount) {
+        usdSpan.textContent = "";
+        return;
+      }
+      getUsdRate().then((rate) => {
+        const usd = (amount * rate).toFixed(2);
+        usdSpan.textContent = "≈ $" + usd;
+      });
+    }
+
     tailwind.config = {
       theme: {
         extend: {
@@ -740,7 +774,7 @@ function attachUsdApprox(cardEl, yuan){
 
       setTimeout(() => {
         
-      // Apply USD conversion AFTER all cards are rendered
+      // Apply USD conversion AFTER cards render AND scroll duplication
       setTimeout(() => {
         document.querySelectorAll(".tiled-product-card").forEach(card => {
           const priceText = card.querySelector(".price-yuan");
