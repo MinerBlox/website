@@ -204,7 +204,8 @@ async function loadItems() {
             "bg-gray-500 text-white";
 
         container.innerHTML += `
-            <div class="flex items-center gap-4 p-3 rounded-xl bg-gray-100 shadow">
+            <div class="flex items-center gap-4 p-3 rounded-xl bg-gray-100 shadow cursor-pointer"
+                 onclick="window.location.href='products.html?id=${item.slug || id}'">
                 <div class="item-thumb">
                     <img src="${item.image}">
                 </div>
