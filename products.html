@@ -1147,33 +1147,7 @@ loadDetailsIfNeeded = async function () {
     const card = document.createElement("div");
     card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
 
-    card.innerHTML = `
-      <div class="relative w-full h-40 overflow-hidden rounded-lg">
-        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
-          ${imgs.map((url,i)=>`
-            <img src="${url}" class="w-full h-40 object-cover rounded-lg cursor-pointer"
-                 onclick="openQC(window.qcGroups['${key}'], ${i})"/>
-          `).join("")}
-        </div>
-      </div>
-    `;
-
-    container.appendChild(card);
-  }
-};
-
-
-    const card = document.createElement("div");
-    card.className =
-      "bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col";
-
-    card.innerH
-
-    container.appendChild(card);
-  }
-};
-
-  console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
+    console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
   window.loadDetailsIfNeeded();
 
 
