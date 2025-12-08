@@ -929,13 +929,6 @@ onSnapshot(itemsCol, (snapshot) => {
   }
 });
 
-// Hidden TikTok items (NOT shown in grid)
-const tiktokCol = collection(db, "tiktokitems");
-onSnapshot(tiktokCol, (snapshot) => {
-  window.hiddenItems = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-});
-
-
 // ========== DETAILS VIEW ==========
 
 function getParam(name) {
@@ -1094,20 +1087,22 @@ function updateCarouselTransform(key) {
 const oldLoad = loadDetailsIfNeeded;
 console.log('QC DEBUG: oldLoad is', typeof oldLoad);
 
+
+// === Corrected QC override with TikTok support ===
+const originalLoadDetails = loadDetailsIfNeeded;
+
 loadDetailsIfNeeded = async function () {
-  console.log('QC DEBUG: overridden loadDetailsIfNeeded running');
-  await oldLoad();
+  await originalLoadDetails();
 
   const item = window.loadedItem;
-  console.log('QC DEBUG: loadedItem inside override', item);
   if (!item) return;
 
-  document.getElementById("buy-orientdig").href = item.url;
+  if (item.url) {
+    document.getElementById("buy-orientdig").href = item.url;
+  }
 
-  const gid = convertOrientdig(item.url);
-  console.log('QC DEBUG: gid after convertOrientdig', gid);
-  const list = await fetchQCs(gid);
-  console.log('QC DEBUG: list from fetchQCs length', list && list.length);
+  const gid = (item.url ? new URL(item.url).searchParams.get("id") : null);
+  const list = gid ? await fetchQCs(gid) : [];
 
   const status = document.getElementById("qc-status");
   const container = document.getElementById("qc-galleries");
@@ -1121,12 +1116,29 @@ loadDetailsIfNeeded = async function () {
   container.innerHTML = "";
 
   const groups = groupBySku(list);
-  console.log('QC DEBUG: groups keys', Object.keys(groups));
 
   for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
-
     carouselPositions[key] = { index: 0, imgs };
+
+    const card = document.createElement("div");
+    card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
+
+    card.innerHTML = `
+      <div class="relative w-full h-40 overflow-hidden rounded-lg">
+        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
+          ${imgs.map((url,i)=>`
+            <img src="${url}" class="w-full h-40 object-cover rounded-lg cursor-pointer"
+                 onclick='openQC(${JSON.stringify(imgs)}, ${i})'/>
+          `).join("")}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  }
+};
+
 
     const card = document.createElement("div");
     card.className =
