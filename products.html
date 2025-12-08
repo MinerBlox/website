@@ -929,13 +929,19 @@ onSnapshot(itemsCol, (snapshot) => {
   }
 });
 
+// Hidden TikTok items (NOT shown in grid)
+const tiktokCol = collection(db, "tiktokitems");
+onSnapshot(tiktokCol, (snapshot) => {
+  window.hiddenItems = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+});
+
+
 // ========== DETAILS VIEW ==========
 
 function getParam(name) {
   const url = new URL(window.location.href);
   return url.searchParams.get(name);
 }
-
 
 async function loadDetailsIfNeeded() {
   const slug = getParam("id");
@@ -944,50 +950,13 @@ async function loadDetailsIfNeeded() {
   document.getElementById("data-view").classList.add("hidden");
   document.getElementById("details-view").classList.remove("hidden");
 
-  // try products
-  let q = query(collection(db, "products"), where("slug", "==", slug));
-  let snap = await getDocs(q);
-
-  if (snap.empty) {
-    // try tiktokitems by slug
-    let q2 = query(collection(db, "tiktokitems"), where("slug", "==", slug));
-    let snap2 = await getDocs(q2);
-
-    if (snap2.empty) {
-      // try doc id
-      const byId = await getDocs(query(collection(db, "tiktokitems"), where("__name__", "==", slug)));
-      snap2 = byId;
-    }
-    snap = snap2;
-  }
+  const q = query(collection(db, "products"), where("slug", "==", slug));
+  const snap = await getDocs(q);
 
   if (snap.empty) {
     document.getElementById("details-title").textContent = "Item not found.";
     return;
   }
-
-  const item = snap.docs[0].data();
-  window.loadedItem = item;
-
-  document.getElementById("details-title").textContent = item.title;
-  document.getElementById("details-category").textContent = item.category || "";
-  document.getElementById("details-image").src = item.image || item.imageUrl || "";
-
-  const price = formatPrice(item.price);
-  document.getElementById("details-price").innerHTML =
-    price + ' <span class="text-sm text-gray-500" id="details-usd"></span>';
-
-  const amount = extractNumericYuan(price);
-  getUsdRate().then(rate => {
-    const usd = (amount * rate).toFixed(2);
-    document.getElementById("details-usd").textContent = "≈ $" + usd;
-  });
-
-  const status = item.status || item.availability || "Available";
-  const pill = document.getElementById("details-status");
-  pill.textContent = mapStatusLabel(status);
-  pill.classList.add(mapStatusToClass(status));
-}
 
   const item = snap.docs[0].data();
   window.loadedItem = item;
