@@ -1116,6 +1116,7 @@ loadDetailsIfNeeded = async function () {
   container.innerHTML = "";
 
   const groups = groupBySku(list);
+  window.qcGroups = groups;
 
   for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
@@ -1129,7 +1130,7 @@ loadDetailsIfNeeded = async function () {
         <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
           ${imgs.map((url,i)=>`
             <img src="${url}" class="w-full h-40 object-cover rounded-lg cursor-pointer"
-                 onclick='openQC(${JSON.stringify(imgs)}, ${i})'/>
+                 onclick="openQC(window.qcGroups['${key}'], ${i})"/>
           `).join("")}
         </div>
       </div>
