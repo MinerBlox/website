@@ -1000,10 +1000,7 @@ async function loadDetailsIfNeeded() {
   }
 }
 
-
-  </script>
-
-
+// expose detai
 <!-- QC MODAL -->
 <div id="qc-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-50">
   <button id="qc-close" class="absolute top-4 right-4 text-white text-4xl">&times;</button>
@@ -1012,144 +1009,192 @@ async function loadDetailsIfNeeded() {
   <button id="qc-next" class="absolute right-4 text-white text-4xl">&#10095;</button>
 </div>
 
-<!-- === UPDATED QC SYSTEM === -->
 <script>
-window.addEventListener('load',()=>{
-console.log('QC DEBUG: outer load handler fired');
+// ============ QC SYSTEM (CLEAN) ============
 
-// Convert OrientDig → goodsId
-function convertOrientdig(url) {
-  console.log('QC DEBUG: convertOrientdig called with', url);
-  const u = new URL(url);
-  return u.searchParams.get("id");
+// state for fullscreen modal
+let qcCurrentImages = [];
+let qcCurrentIndex = 0;
+
+// open modal with given image list + index
+function openQCModal(imgs, index) {
+  qcCurrentImages = imgs || [];
+  qcCurrentIndex = index || 0;
+  const modal = document.getElementById("qc-modal");
+  const imgEl = document.getElementById("qc-modal-img");
+  if (!modal || !imgEl || !qcCurrentImages.length) return;
+  imgEl.src = qcCurrentImages[qcCurrentIndex];
+  modal.classList.remove("hidden");
 }
 
-// Fetch QC data
-async function fetchQCs(id) {
-  console.log('QC DEBUG: fetchQCs called with', id);
+function closeQCModal() {
+  const modal = document.getElementById("qc-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function prevQCModal() {
+  if (!qcCurrentImages.length) return;
+  qcCurrentIndex = (qcCurrentIndex - 1 + qcCurrentImages.length) % qcCurrentImages.length;
+  const imgEl = document.getElementById("qc-modal-img");
+  if (imgEl) imgEl.src = qcCurrentImages[qcCurrentIndex];
+}
+
+function nextQCModal() {
+  if (!qcCurrentImages.length) return;
+  qcCurrentIndex = (qcCurrentIndex + 1) % qcCurrentImages.length;
+  const imgEl = document.getElementById("qc-modal-img");
+  if (imgEl) imgEl.src = qcCurrentImages[qcCurrentIndex];
+}
+
+// carousel positions per SKU key
+const qcCarouselPositions = {};
+
+// helper to update carousel transform
+function updateQCCarousel(key) {
+  const entry = qcCarouselPositions[key];
+  if (!entry) return;
+  const el = document.querySelector(`.qc-carousel[data-key="${key}"]`);
+  if (!el) return;
+  el.style.transform = `translateX(-${entry.index * 100}%)`;
+}
+
+function qcPrev(key) {
+  const entry = qcCarouselPositions[key];
+  if (!entry) return;
+  entry.index = (entry.index - 1 + entry.imgs.length) % entry.imgs.length;
+  updateQCCarousel(key);
+}
+
+function qcNext(key) {
+  const entry = qcCarouselPositions[key];
+  if (!entry) return;
+  entry.index = (entry.index + 1) % entry.imgs.length;
+  updateQCCarousel(key);
+}
+
+// fetch QC data from Cloudflare function
+async function fetchQCs(goodsId) {
   try {
-    const r = await fetch(`/api/qc?goodsId=${id}`);
-    if (!r.ok) return [];
-    const d = await r.json();
-    return d.data || [];
+    const res = await fetch(`/api/qc?goodsId=${encodeURIComponent(goodsId)}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.data || [];
   } catch (e) {
-    console.error("QC error", e);
+    console.error("QC fetch error", e);
     return [];
   }
 }
 
-// Group images by SKU
-function groupBySku(list) {
-  console.log('QC DEBUG: groupBySku list length', list && list.length);
-  const g = {};
-  list.forEach(i => {
-    (g[i.skuId] = g[i.skuId] || []).push(i.photoUrl);
+// group QCs by SKU
+function groupQCsBySku(list) {
+  const groups = {};
+  (list || []).forEach(item => {
+    const key = item.skuId || "default";
+    if (!groups[key]) groups[key] = [];
+    if (item.photoUrl) groups[key].push(item.photoUrl);
   });
-  return g;
+  return groups;
 }
 
-// Modal logic
-let currentImgs = [];
-let currentIndex = 0;
-
-function openQC(imgs, i) {
-  console.log('QC DEBUG: openQC index', i, 'imgs length', imgs && imgs.length);
-  currentImgs = imgs;
-  currentIndex = i;
-  document.getElementById("qc-modal-img").src = imgs[i];
-  document.getElementById("qc-modal").classList.remove("hidden");
-}
-
-function closeQC() {
-  console.log('QC DEBUG: closeQC');
-  document.getElementById("qc-modal").classList.add("hidden");
-}
-
-function prevQC() {
-  console.log('QC DEBUG: prevQC');
-  currentIndex = (currentIndex - 1 + currentImgs.length) % currentImgs.length;
-  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
-}
-
-function nextQC() {
-  console.log('QC DEBUG: nextQC');
-  currentIndex = (currentIndex + 1) % currentImgs.length;
-  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
-}
-
-window.addEventListener("load", () => {
-  console.log('QC DEBUG: inner load handler for modal controls fired');
-  document.getElementById("qc-close").onclick = closeQC;
-  document.getElementById("qc-prev").onclick = prevQC;
-  document.getElementById("qc-next").onclick = nextQC;
-});
-
-// Carousel state
-const carouselPositions = {};
-
-function carouselPrev(key) {
-  const pos = carouselPositions[key];
-  pos.index = (pos.index - 1 + pos.imgs.length) % pos.imgs.length;
-  updateCarouselTransform(key);
-}
-
-function carouselNext(key) {
-  const pos = carouselPositions[key];
-  pos.index = (pos.index + 1) % pos.imgs.length;
-  updateCarouselTransform(key);
-}
-
-function updateCarouselTransform(key) {
-  const el = document.querySelector(`.qc-carousel[data-key="${key}"]`);
-  const index = carouselPositions[key].index;
-  el.style.transform = `translateX(-${index * 100}%)`;
-}
-
-// Override loadDetailsIfNeeded
-const oldLoad = loadDetailsIfNeeded;
-console.log('QC DEBUG: oldLoad is', typeof oldLoad);
-
-
-// === Corrected QC override with TikTok support ===
-const originalLoadDetails = loadDetailsIfNeeded;
-
-loadDetailsIfNeeded = async function () {
-  await originalLoadDetails();
-
-  const item = window.loadedItem;
-  if (!item) return;
-
-  if (item.url) {
-    document.getElementById("buy-orientdig").href = item.url;
-  }
-
-  const gid = (item.url ? new URL(item.url).searchParams.get("id") : null);
-  const list = gid ? await fetchQCs(gid) : [];
-
-  const status = document.getElementById("qc-status");
+// render QC cards into qc-galleries
+function renderQCGrid(groups) {
+  const statusEl = document.getElementById("qc-status");
   const container = document.getElementById("qc-galleries");
+  if (!statusEl || !container) return;
 
-  if (!list.length) {
-    status.textContent = "No QCs Available.";
+  const entries = Object.entries(groups);
+  if (!entries.length) {
+    statusEl.textContent = "No QCs available.";
+    container.innerHTML = "";
     return;
   }
 
-  status.textContent = "";
+  statusEl.textContent = "";
   container.innerHTML = "";
+  Object.keys(qcCarouselPositions).forEach(k => delete qcCarouselPositions[k]);
 
-  const groups = groupBySku(list);
-  window.qcGroups = groups;
-
-  for (const [sku, imgs] of Object.entries(groups)) {
-    const key = sku;
-    carouselPositions[key] = { index: 0, imgs };
+  for (const [sku, imgs] of entries) {
+    const key = sku || "default";
+    qcCarouselPositions[key] = { index: 0, imgs };
 
     const card = document.createElement("div");
     card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
 
-    console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
-  window.loadDetailsIfNeeded();
+    const safeImgs = JSON.stringify(imgs);
 
+    card.innerHTML = `
+      <div class="relative w-full h-40 overflow-hidden rounded-lg">
+        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
+          ${imgs.map((url, i) => `
+            <img src="${url}"
+                 class="w-full h-40 object-cover rounded-lg cursor-pointer"
+                 onclick='openQCModal(${safeImgs}, ${i})' />
+          `).join("")}
+        </div>
+      </div>
+      <div class="flex justify-between items-center mt-2">
+        <button class="px-3 py-1 text-sm bg-gray-200 rounded-lg" onclick="qcPrev('${key}')">Prev</button>
+        <span class="text-xs text-gray-500 truncate max-w-[60%]">${key}</span>
+        <button class="px-3 py-1 text-sm bg-gray-200 rounded-lg" onclick="qcNext('${key}')">Next</button>
+      </div>
+    `;
 
+    container.appendChild(card);
+  }
+}
+
+// load QCs for the currently loaded item
+async function loadQCsForItem() {
+  const item = window.loadedItem;
+  const statusEl = document.getElementById("qc-status");
+  if (!item || !item.url) {
+    if (statusEl) statusEl.textContent = "No item URL; cannot load QCs.";
+    return;
+  }
+
+  let goodsId = null;
+  try {
+    const u = new URL(item.url);
+    goodsId = u.searchParams.get("id");
+  } catch (e) {
+    console.error("QC: invalid item URL", e);
+  }
+
+  if (!goodsId) {
+    if (statusEl) statusEl.textContent = "No QC link available.";
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = "Fetching QCs...";
+  const list = await fetchQCs(goodsId);
+  const groups = groupQCsBySku(list);
+  renderQCGrid(groups);
+}
+
+// expose QC loader for chaining
+window.loadQCsForItem = loadQCsForItem;
+
+// wire up on window load: first details, then QCs
+window.addEventListener("load", async () => {
+  const modal = document.getElementById("qc-modal");
+  if (modal) {
+    const closeBtn = document.getElementById("qc-close");
+    const prevBtn = document.getElementById("qc-prev");
+    const nextBtn = document.getElementById("qc-next");
+    if (closeBtn) closeBtn.onclick = closeQCModal;
+    if (prevBtn) prevBtn.onclick = prevQCModal;
+    if (nextBtn) nextBtn.onclick = nextQCModal;
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeQCModal();
+    });
+  }
+
+  if (window.loadDetailsIfNeeded) {
+    await window.loadDetailsIfNeeded();
+    await window.loadQCsForItem();
+  }
 });
 </script>
+
+</body>
+</html>
