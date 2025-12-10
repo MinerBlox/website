@@ -1153,19 +1153,7 @@ for (const [sku, imgs] of Object.entries(groups)) {
 }; // end loadDetailsIfNeeded
 
 
-window.addEventListener("load", () => {
-  console.log("DEBUG: window.load fired, calling loadDetailsIfNeeded");
-
-  if (typeof loadDetailsIfNeeded === "function") {
-    try {
-      loadDetailsIfNeeded();
-    } catch (err) {
-      console.error("DEBUG: loadDetailsIfNeeded failed:", err);
-    }
-  } else {
-    console.error("DEBUG: loadDetailsIfNeeded is NOT defined on window.load");
-  }
-});
+window.addEventListener("load", () => { console.log("DEBUG: window.load fired, calling loadDetailsIfNeeded"); if (typeof loadDetailsIfNeeded === "function") { loadDetailsIfNeeded(); } else { console.error("DEBUG: loadDetailsIfNeeded missing on window.load"); }}); });
 </script>
 
 <script>
