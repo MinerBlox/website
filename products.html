@@ -1141,43 +1141,7 @@ loadDetailsIfNeeded = async function () {
 };
 
 
-    const card = document.createElement("div");
-    card.className =
-      "bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col";
-
-    card.innerHTML = `
-      <div class="relative w-full h-40 overflow-hidden rounded-lg">
-        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
-          ${imgs
-            .map(
-              (url, i) => `
-              <img 
-                src="${url}" 
-                class="w-full h-40 object-cover rounded-lg flex-shrink-0 cursor-pointer"
-                onclick='openQC(${JSON.stringify(imgs)}, ${i})'
-              />
-            `
-            )
-            .join("")}
-        </div>
-
-        <button onclick="carouselPrev('${key}')" 
-          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
-          ‹
-        </button>
-
-        <button onclick="carouselNext('${key}')"
-          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
-          ›
-        </button>
-      </div>
-
-      <p class="text-xs text-gray-500 mt-3 text-center">ACBuy</p>
-    `;
-
-    container.appendChild(card);
-  }
-};
+    
 
   console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
   window.loadDetailsIfNeeded();
