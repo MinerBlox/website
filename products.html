@@ -944,34 +944,41 @@ async function loadDetailsIfNeeded() {
   document.getElementById("data-view").classList.add("hidden");
   document.getElementById("details-view").classList.remove("hidden");
 
-  // try products
+  let item = null;
+
+  // Try products first
   let q = query(collection(db, "products"), where("slug", "==", slug));
   let snap = await getDocs(q);
 
-  if (snap.empty) {
-    // try tiktokitems by slug
-    let q2 = query(collection(db, "tiktokitems"), where("slug", "==", slug));
-    let snap2 = await getDocs(q2);
-
-    if (snap2.empty) {
-      // try doc id
-      const byId = await getDocs(query(collection(db, "tiktokitems"), where("__name__", "==", slug)));
-      snap2 = byId;
+  if (!snap.empty) {
+    item = snap.docs[0].data();
+  } else {
+    // Fallback to tiktokitems
+    q = query(collection(db, "tiktokitems"), where("slug", "==", slug));
+    snap = await getDocs(q);
+    if (!snap.empty) {
+      item = snap.docs[0].data();
+      // Convert TikTok price to yuan if numeric
+      if (item.price && !String(item.price).includes("¥")) {
+        item.price = "¥" + String(item.price).replace(/[^\d.]/g, "");
+      }
+      // Map image to imageUrl for compatibility
+      if (item.image) {
+        item.imageUrl = item.image;
+      }
     }
-    snap = snap2;
   }
 
-  if (snap.empty) {
+  if (!item) {
     document.getElementById("details-title").textContent = "Item not found.";
     return;
   }
 
-  const item = snap.docs[0].data();
   window.loadedItem = item;
 
-  document.getElementById("details-title").textContent = item.title;
+  document.getElementById("details-title").textContent = item.title || "";
   document.getElementById("details-category").textContent = item.category || "";
-  document.getElementById("details-image").src = item.image || item.imageUrl || "";
+  document.getElementById("details-image").src = item.imageUrl || item.image || "";
 
   const price = formatPrice(item.price);
   document.getElementById("details-price").innerHTML =
@@ -987,37 +994,14 @@ async function loadDetailsIfNeeded() {
   const pill = document.getElementById("details-status");
   pill.textContent = mapStatusLabel(status);
   pill.classList.add(mapStatusToClass(status));
+
+  if (item.url) {
+    document.getElementById("buy-orientdig").href = item.url;
+  }
 }
 
-  const item = snap.docs[0].data();
-  window.loadedItem = item;
 
-  document.getElementById("details-title").textContent = item.title;
-  document.getElementById("details-category").textContent = item.category || "";
-  document.getElementById("details-image").src = item.image || item.imageUrl || "";
-
-  const price = formatPrice(item.price);
-  document.getElementById("details-price").innerHTML =
-    price + ' <span class="text-sm text-gray-500" id="details-usd"></span>';
-
-  const amount = extractNumericYuan(price);
-  getUsdRate().then(rate => {
-    const usd = (amount * rate).toFixed(2);
-    document.getElementById("details-usd").textContent = "≈ $" + usd;
-  });
-
-  const status = item.status || item.availability || "Available";
-  const pill = document.getElementById("details-status");
-  pill.textContent = mapStatusLabel(status);
-  pill.classList.add(mapStatusToClass(status));
-}
-
-// EXPOSE globally so QC override can see it
-window.loadDetailsIfNeeded = loadDetailsIfNeeded;
-
-// trigger on load
-window.addEventListener("load", loadDetailsIfNeeded);
-</script>
+  </script>
 
 
 <!-- QC MODAL -->
@@ -1125,20 +1109,22 @@ function updateCarouselTransform(key) {
 const oldLoad = loadDetailsIfNeeded;
 console.log('QC DEBUG: oldLoad is', typeof oldLoad);
 
+
+// === Corrected QC override with TikTok support ===
+const originalLoadDetails = loadDetailsIfNeeded;
+
 loadDetailsIfNeeded = async function () {
-  console.log('QC DEBUG: overridden loadDetailsIfNeeded running');
-  await oldLoad();
+  await originalLoadDetails();
 
   const item = window.loadedItem;
-  console.log('QC DEBUG: loadedItem inside override', item);
   if (!item) return;
 
-  document.getElementById("buy-orientdig").href = item.url;
+  if (item.url) {
+    document.getElementById("buy-orientdig").href = item.url;
+  }
 
-  const gid = convertOrientdig(item.url);
-  console.log('QC DEBUG: gid after convertOrientdig', gid);
-  const list = await fetchQCs(gid);
-  console.log('QC DEBUG: list from fetchQCs length', list && list.length);
+  const gid = (item.url ? new URL(item.url).searchParams.get("id") : null);
+  const list = gid ? await fetchQCs(gid) : [];
 
   const status = document.getElementById("qc-status");
   const container = document.getElementById("qc-galleries");
@@ -1152,52 +1138,16 @@ loadDetailsIfNeeded = async function () {
   container.innerHTML = "";
 
   const groups = groupBySku(list);
-  console.log('QC DEBUG: groups keys', Object.keys(groups));
+  window.qcGroups = groups;
 
   for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
-
     carouselPositions[key] = { index: 0, imgs };
 
     const card = document.createElement("div");
-    card.className =
-      "bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col";
+    card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
 
-    card.innerHTML = `
-      <div class="relative w-full h-40 overflow-hidden rounded-lg">
-        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
-          ${imgs
-            .map(
-              (url, i) => `
-              <img 
-                src="${url}" 
-                class="w-full h-40 object-cover rounded-lg flex-shrink-0 cursor-pointer"
-                onclick='openQC(${JSON.stringify(imgs)}, ${i})'
-              />
-            `
-            )
-            .join("")}
-        </div>
-
-        <button onclick="carouselPrev('${key}')" 
-          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
-          ‹
-        </button>
-
-        <button onclick="carouselNext('${key}')"
-          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
-          ›
-        </button>
-      </div>
-
-      <p class="text-xs text-gray-500 mt-3 text-center">ACBuy</p>
-    `;
-
-    container.appendChild(card);
-  }
-};
-
-  console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
+    console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
   window.loadDetailsIfNeeded();
 
 
