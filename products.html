@@ -1140,16 +1140,18 @@ loadDetailsIfNeeded = async function () {
   const groups = groupBySku(list);
   window.qcGroups = groups;
 
-  for (const [sku, imgs] of Object.entries(groups)) {
+  
+for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
     carouselPositions[key] = { index: 0, imgs };
 
     const card = document.createElement("div");
     card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
 
-    console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
-  window.loadDetailsIfNeeded();
+    // You can extend card rendering here
+  }
+}; // end loadDetailsIfNeeded
 
-
-});
 </script>
+</body>
+</html>
