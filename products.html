@@ -938,6 +938,8 @@ function getParam(name) {
 
 
 async function loadDetailsIfNeeded() {
+window.loadDetailsIfNeeded = loadDetailsIfNeeded;
+
   const slug = getParam("id");
   if (!slug) return;
 
@@ -1153,7 +1155,7 @@ for (const [sku, imgs] of Object.entries(groups)) {
 }; // end loadDetailsIfNeeded
 
 
-window.addEventListener("load", () => { console.log("DEBUG: window.load fired, calling loadDetailsIfNeeded"); if (typeof loadDetailsIfNeeded === "function") { loadDetailsIfNeeded(); } else { console.error("DEBUG: loadDetailsIfNeeded missing on window.load"); }}); });
+window.addEventListener("DOMContentLoaded", () => { loadDetailsIfNeeded(); });
 </script>
 
 <script>
