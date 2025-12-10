@@ -336,10 +336,6 @@
 }
 
 
-
-.card { position: relative; z-index: 10; }
-#itemGrid { position: relative; z-index: 10; }
-
 </style>
 </head>
 <body class="text-gray-800 font-sans min-h-screen p-4 sm:p-8">
@@ -1159,5 +1155,14 @@ for (const [sku, imgs] of Object.entries(groups)) {
 
 window.addEventListener("DOMContentLoaded", () => { loadDetailsIfNeeded(); });
 </script>
+
+<script>
+// DEBUG: global click tracker
+document.addEventListener("click", (e) => {
+  console.log("DEBUG CLICK: target =", e.target, 
+              "closest .card =", e.target.closest(".card"));
+});
+</script>
+
 </body>
 </html>
