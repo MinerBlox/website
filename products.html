@@ -936,51 +936,27 @@ function getParam(name) {
   return url.searchParams.get(name);
 }
 
-
 async function loadDetailsIfNeeded() {
-window.loadDetailsIfNeeded = loadDetailsIfNeeded;
-
   const slug = getParam("id");
   if (!slug) return;
 
   document.getElementById("data-view").classList.add("hidden");
   document.getElementById("details-view").classList.remove("hidden");
 
-  let item = null;
+  const q = query(collection(db, "products"), where("slug", "==", slug));
+  const snap = await getDocs(q);
 
-  // Try products first
-  let q = query(collection(db, "products"), where("slug", "==", slug));
-  let snap = await getDocs(q);
-
-  if (!snap.empty) {
-    item = snap.docs[0].data();
-  } else {
-    // Fallback to tiktokitems
-    q = query(collection(db, "tiktokitems"), where("slug", "==", slug));
-    snap = await getDocs(q);
-    if (!snap.empty) {
-      item = snap.docs[0].data();
-      // Convert TikTok price to yuan if numeric
-      if (item.price && !String(item.price).includes("¥")) {
-        item.price = "¥" + String(item.price).replace(/[^\d.]/g, "");
-      }
-      // Map image to imageUrl for compatibility
-      if (item.image) {
-        item.imageUrl = item.image;
-      }
-    }
-  }
-
-  if (!item) {
+  if (snap.empty) {
     document.getElementById("details-title").textContent = "Item not found.";
     return;
   }
 
+  const item = snap.docs[0].data();
   window.loadedItem = item;
 
-  document.getElementById("details-title").textContent = item.title || "";
+  document.getElementById("details-title").textContent = item.title;
   document.getElementById("details-category").textContent = item.category || "";
-  document.getElementById("details-image").src = item.imageUrl || item.image || "";
+  document.getElementById("details-image").src = item.image || item.imageUrl || "";
 
   const price = formatPrice(item.price);
   document.getElementById("details-price").innerHTML =
@@ -996,14 +972,14 @@ window.loadDetailsIfNeeded = loadDetailsIfNeeded;
   const pill = document.getElementById("details-status");
   pill.textContent = mapStatusLabel(status);
   pill.classList.add(mapStatusToClass(status));
-
-  if (item.url) {
-    document.getElementById("buy-orientdig").href = item.url;
-  }
 }
 
+// EXPOSE globally so QC override can see it
+window.loadDetailsIfNeeded = loadDetailsIfNeeded;
 
-  </script>
+// trigger on load
+window.addEventListener("load", loadDetailsIfNeeded);
+</script>
 
 
 <!-- QC MODAL -->
@@ -1142,29 +1118,70 @@ loadDetailsIfNeeded = async function () {
   const groups = groupBySku(list);
   window.qcGroups = groups;
 
-  
-for (const [sku, imgs] of Object.entries(groups)) {
+  for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
     carouselPositions[key] = { index: 0, imgs };
 
     const card = document.createElement("div");
     card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
 
-    // You can extend card rendering here
+    card.innerHTML = `
+      <div class="relative w-full h-40 overflow-hidden rounded-lg">
+        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
+          ${imgs.map((url,i)=>`
+            <img src="${url}" class="w-full h-40 object-cover rounded-lg cursor-pointer"
+                 onclick="openQC(window.qcGroups['${key}'], ${i})"/>
+          `).join("")}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
   }
-}; // end loadDetailsIfNeeded
+};
 
 
-window.addEventListener("DOMContentLoaded", () => { loadDetailsIfNeeded(); });
-</script>
+    const card = document.createElement("div");
+    card.className =
+      "bg-white rounded-xl shadow hover:shadow-lg transition p-4 flex flex-col";
 
-<script>
-// DEBUG: global click tracker
-document.addEventListener("click", (e) => {
-  console.log("DEBUG CLICK: target =", e.target, 
-              "closest .card =", e.target.closest(".card"));
+    card.innerHTML = `
+      <div class="relative w-full h-40 overflow-hidden rounded-lg">
+        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
+          ${imgs
+            .map(
+              (url, i) => `
+              <img 
+                src="${url}" 
+                class="w-full h-40 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                onclick='openQC(${JSON.stringify(imgs)}, ${i})'
+              />
+            `
+            )
+            .join("")}
+        </div>
+
+        <button onclick="carouselPrev('${key}')" 
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
+          ‹
+        </button>
+
+        <button onclick="carouselNext('${key}')"
+          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full px-3 py-1">
+          ›
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-3 text-center">ACBuy</p>
+    `;
+
+    container.appendChild(card);
+  }
+};
+
+  console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
+  window.loadDetailsIfNeeded();
+
+
 });
 </script>
-
-</body>
-</html>
