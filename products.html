@@ -510,7 +510,7 @@
       </div>
 
       <div id="qc-status" class="text-gray-500 mt-6">Fetching QCs...</div>
-<div id="qc-galleries" class="mt-4 grid gap-6"></div>
+<div id="qc-galleries" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
     </div>
 
     <!-- HOME VIEW -->
@@ -983,12 +983,16 @@ window.addEventListener("load", loadDetailsIfNeeded);
 
 
 <!-- QC MODAL -->
-<div id="qc-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-50">
-  <button id="qc-close" class="absolute top-4 right-4 text-white text-4xl">&times;</button>
-  <button id="qc-prev" class="absolute left-4 text-white text-4xl">&#10094;</button>
-  <img id="qc-modal-img" class="max-w-full max-h-full mx-auto rounded-lg shadow-lg" />
-  <button id="qc-next" class="absolute right-4 text-white text-4xl">&#10095;</button>
+
+<div id="qc-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl p-4 relative w-11/12 md:w-1/2 max-h-[80vh] flex items-center justify-center">
+    <button id="qc-close" class="absolute top-2 right-3 text-gray-700 text-3xl">&times;</button>
+    <button id="qc-prev" class="absolute left-2 text-gray-700 text-4xl">&#10094;</button>
+    <img id="qc-modal-img" class="max-h-[70vh] object-contain mx-auto rounded-lg" />
+    <button id="qc-next" class="absolute right-2 text-gray-700 text-4xl">&#10095;</button>
+  </div>
 </div>
+
 
 <!-- === UPDATED QC SYSTEM === -->
 <script>
@@ -1118,26 +1122,26 @@ loadDetailsIfNeeded = async function () {
   const groups = groupBySku(list);
   window.qcGroups = groups;
 
-  
-for (const [sku, imgs] of Object.entries(groups)) {
+  for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
     carouselPositions[key] = { index: 0, imgs };
 
     const card = document.createElement("div");
-    card.className = "bg-white rounded-xl shadow hover:shadow-lg transition p-4 cursor-pointer flex flex-col";
-
-    const first = imgs[0];
+    card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
 
     card.innerHTML = `
-        <img src="${first}" class="w-full h-40 object-cover rounded-lg mb-3" />
-        <p class="font-bold text-center">ACBUY</p>
-        <p class="text-center text-sm text-gray-600">${imgs.length} QC PHOTOS</p>
+      <div class="relative w-full h-40 overflow-hidden rounded-lg">
+        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
+          ${imgs.map((url,i)=>`
+            <img src="${url}" class="w-full h-40 object-cover rounded-lg cursor-pointer"
+                 onclick="openQC(window.qcGroups['${key}'], ${i})"/>
+          `).join("")}
+        </div>
+      </div>
     `;
 
-    card.onclick = () => openQC(window.qcGroups[key], 0);
     container.appendChild(card);
-}
-
+  }
 };
 
 
