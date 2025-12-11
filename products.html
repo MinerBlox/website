@@ -885,186 +885,20 @@
       applyFiltersAndRender();
     };
 
-    window.addEventListener("load", () => {
-      const searchInput = document.getElementById("searchInput");
-      if (searchInput) {
-        searchInput.addEventListener("input", applyFiltersAndRender);
-      }
-    });
+    
+// Attach modal button events immediately — guaranteed to run
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("QC DEBUG: Modal button handlers attached");
 
-  </script>
+  const closeBtn = document.getElementById("qc-close");
+  const prevBtn  = document.getElementById("qc-prev");
+  const nextBtn  = document.getElementById("qc-next");
 
-  <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  onSnapshot,
-  query,
-  where,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDTIzoJlvrr0mYxwx82cQ9JJn8rXrMEy7JA",
-  authDomain: "reps-central.firebaseapp.com",
-  projectId: "reps-central",
-  storageBucket: "reps-central.firebasestorage.app",
-  messagingSenderId: "812299387060",
-  appId: "1:812299387060:web:1c93d1e7bf30b565536d7e1",
-  measurementId: "G-8T7F9F1FZ9"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const itemsCol = collection(db, "products");
-onSnapshot(itemsCol, (snapshot) => {
-  const items = snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data()
-  }));
-  if (window.updateItemsFromFirestore) {
-    window.updateItemsFromFirestore(items);
-  }
+  if (closeBtn) closeBtn.onclick = closeQC;
+  if (prevBtn)  prevBtn.onclick = prevQC;
+  if (nextBtn)  nextBtn.onclick = nextQC;
 });
 
-// ========== DETAILS VIEW ==========
-
-function getParam(name) {
-  const url = new URL(window.location.href);
-  return url.searchParams.get(name);
-}
-
-async function loadDetailsIfNeeded() {
-  const slug = getParam("id");
-  if (!slug) return;
-
-  document.getElementById("data-view").classList.add("hidden");
-  document.getElementById("details-view").classList.remove("hidden");
-
-  const q = query(collection(db, "products"), where("slug", "==", slug));
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    document.getElementById("details-title").textContent = "Item not found.";
-    return;
-  }
-
-  const item = snap.docs[0].data();
-  window.loadedItem = item;
-
-  document.getElementById("details-title").textContent = item.title;
-  document.getElementById("details-category").textContent = item.category || "";
-  document.getElementById("details-image").src = item.image || item.imageUrl || "";
-
-  const price = formatPrice(item.price);
-  document.getElementById("details-price").innerHTML =
-    price + ' <span class="text-sm text-gray-500" id="details-usd"></span>';
-
-  const amount = extractNumericYuan(price);
-  getUsdRate().then(rate => {
-    const usd = (amount * rate).toFixed(2);
-    document.getElementById("details-usd").textContent = "≈ $" + usd;
-  });
-
-  const status = item.status || item.availability || "Available";
-  const pill = document.getElementById("details-status");
-  pill.textContent = mapStatusLabel(status);
-  pill.classList.add(mapStatusToClass(status));
-}
-
-// EXPOSE globally so QC override can see it
-window.loadDetailsIfNeeded = loadDetailsIfNeeded;
-
-// trigger on load
-window.addEventListener("load", loadDetailsIfNeeded);
-</script>
-
-
-<!-- QC MODAL -->
-
-<div id="qc-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50">
-  <div class="bg-white rounded-2xl p-4 relative w-11/12 md:w-1/2 max-h-[80vh] flex items-center justify-center">
-    <button id="qc-close" class="absolute top-2 right-3 text-gray-700 text-3xl">&times;</button>
-    <button id="qc-prev" class="absolute left-2 text-gray-700 text-4xl">&#10094;</button>
-    <img id="qc-modal-img" class="max-h-[70vh] object-contain mx-auto rounded-lg" />
-    <button id="qc-next" class="absolute right-2 text-gray-700 text-4xl">&#10095;</button>
-  </div>
-</div>
-
-
-<!-- === UPDATED QC SYSTEM === -->
-<script>
-window.addEventListener('load',()=>{
-console.log('QC DEBUG: outer load handler fired');
-
-// Convert OrientDig → goodsId
-function convertOrientdig(url) {
-  console.log('QC DEBUG: convertOrientdig called with', url);
-  const u = new URL(url);
-  return u.searchParams.get("id");
-}
-
-// Fetch QC data
-async function fetchQCs(id) {
-  console.log('QC DEBUG: fetchQCs called with', id);
-  try {
-    const r = await fetch(`/api/qc?goodsId=${id}`);
-    if (!r.ok) return [];
-    const d = await r.json();
-    return d.data || [];
-  } catch (e) {
-    console.error("QC error", e);
-    return [];
-  }
-}
-
-// Group images by SKU
-function groupBySku(list) {
-  console.log('QC DEBUG: groupBySku list length', list && list.length);
-  const g = {};
-  list.forEach(i => {
-    (g[i.skuId] = g[i.skuId] || []).push(i.photoUrl);
-  });
-  return g;
-}
-
-// Modal logic
-let currentImgs = [];
-let currentIndex = 0;
-
-function openQC(imgs, i) {
-  console.log('QC DEBUG: openQC index', i, 'imgs length', imgs && imgs.length);
-  currentImgs = imgs;
-  currentIndex = i;
-  document.getElementById("qc-modal-img").src = imgs[i];
-  document.getElementById("qc-modal").classList.remove("hidden");
-}
-
-function closeQC() {
-  console.log('QC DEBUG: closeQC');
-  document.getElementById("qc-modal").classList.add("hidden");
-}
-
-function prevQC() {
-  console.log('QC DEBUG: prevQC');
-  currentIndex = (currentIndex - 1 + currentImgs.length) % currentImgs.length;
-  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
-}
-
-function nextQC() {
-  console.log('QC DEBUG: nextQC');
-  currentIndex = (currentIndex + 1) % currentImgs.length;
-  document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
-}
-
-window.addEventListener("load", () => {
-  console.log('QC DEBUG: inner load handler for modal controls fired');
-  document.getElementById("qc-close").onclick = closeQC;
-  document.getElementById("qc-prev").onclick = prevQC;
-  document.getElementById("qc-next").onclick = nextQC;
-});
 
 // Carousel state
 const carouselPositions = {};
