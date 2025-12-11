@@ -1118,26 +1118,26 @@ loadDetailsIfNeeded = async function () {
   const groups = groupBySku(list);
   window.qcGroups = groups;
 
-  for (const [sku, imgs] of Object.entries(groups)) {
+  
+for (const [sku, imgs] of Object.entries(groups)) {
     const key = sku;
     carouselPositions[key] = { index: 0, imgs };
 
     const card = document.createElement("div");
-    card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
+    card.className = "bg-white rounded-xl shadow hover:shadow-lg transition p-4 cursor-pointer flex flex-col";
+
+    const first = imgs[0];
 
     card.innerHTML = `
-      <div class="relative w-full h-40 overflow-hidden rounded-lg">
-        <div class="qc-carousel flex transition-transform duration-300" data-key="${key}">
-          ${imgs.map((url,i)=>`
-            <img src="${url}" class="w-full h-40 object-cover rounded-lg cursor-pointer"
-                 onclick="openQC(window.qcGroups['${key}'], ${i})"/>
-          `).join("")}
-        </div>
-      </div>
+        <img src="${first}" class="w-full h-40 object-cover rounded-lg mb-3" />
+        <p class="font-bold text-center">ACBUY</p>
+        <p class="text-center text-sm text-gray-600">${imgs.length} QC PHOTOS</p>
     `;
 
+    card.onclick = () => openQC(window.qcGroups[key], 0);
     container.appendChild(card);
-  }
+}
+
 };
 
 
