@@ -968,25 +968,18 @@ for (const [sku, imgs] of Object.entries(groups)) {
   const first = imgs[0];
 
   card.innerHTML = `
-      <img src="${first}"
-           class="w-full h-40 object-cover rounded-lg mb-3" />
+  <img src="${first}"
+       class="w-full h-40 object-cover rounded-lg mb-3" />
 
-      <p class="font-bold text-center">ACBUY</p>
-      <p class="text-center text-sm text-gray-600">${imgs.length} QC PHOTOS</p>
-    `;
+  <p class="font-bold text-center">ACBUY</p>
+  <p class="text-center text-sm text-gray-600">${imgs.length} QC PHOTOS</p>
+`;
 
-  card.onclick = () => openQC(window.qcGroups[key], 0);
+card.onclick = () => openQC(window.qcGroups[key], 0);
 
-  container.appendChild(card);
+container.appendChild(card);
 }
 
-
-
-    
-
-  console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
-  window.loadDetailsIfNeeded();
-
-
-});
+console.log('QC DEBUG: Forcing overridden loadDetailsIfNeeded to run');
+window.loadDetailsIfNeeded();
 </script>
