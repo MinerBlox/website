@@ -1036,35 +1036,70 @@ let currentIndex = 0;
 
 function openQC(imgs, i) {
   console.log('QC DEBUG: openQC index', i, 'imgs length', imgs && imgs.length);
+  const imgEl = document.getElementById("qc-modal-img");
+  const modalEl = document.getElementById("qc-modal");
+  console.log('QC DEBUG: openQC elements', { imgEl: !!imgEl, modalEl: !!modalEl });
   currentImgs = imgs;
   currentIndex = i;
-  document.getElementById("qc-modal-img").src = imgs[i];
-  document.getElementById("qc-modal").classList.remove("hidden");
+  if (imgEl) imgEl.src = imgs[i];
+  if (modalEl) modalEl.classList.remove("hidden");
 }
 
 function closeQC() {
   console.log('QC DEBUG: closeQC');
-  document.getElementById("qc-modal").classList.add("hidden");
+  const modalEl = document.getElementById("qc-modal");
+  console.log('QC DEBUG: closeQC modal exists?', !!modalEl);
+  if (modalEl) modalEl.classList.add("hidden");
 }
 
 function prevQC() {
-  console.log('QC DEBUG: prevQC');
+  console.log('QC DEBUG: prevQC', { currentIndex, length: currentImgs && currentImgs.length });
+  if (!currentImgs || !currentImgs.length) { console.log('QC DEBUG: prevQC aborted (no images)'); return; }
   currentIndex = (currentIndex - 1 + currentImgs.length) % currentImgs.length;
   document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
+  console.log('QC DEBUG: prevQC updated', { currentIndex, src: currentImgs[currentIndex] });
 }
 
 function nextQC() {
-  console.log('QC DEBUG: nextQC');
+  console.log('QC DEBUG: nextQC', { currentIndex, length: currentImgs && currentImgs.length });
+  if (!currentImgs || !currentImgs.length) { console.log('QC DEBUG: nextQC aborted (no images)'); return; }
   currentIndex = (currentIndex + 1) % currentImgs.length;
   document.getElementById("qc-modal-img").src = currentImgs[currentIndex];
+  console.log('QC DEBUG: nextQC updated', { currentIndex, src: currentImgs[currentIndex] });
 }
 
-window.addEventListener("load", () => {
-  console.log('QC DEBUG: inner load handler for modal controls fired');
-  document.getElementById("qc-close").onclick = closeQC;
-  document.getElementById("qc-prev").onclick = prevQC;
-  document.getElementById("qc-next").onclick = nextQC;
-});
+// Bind modal controls (can't use a nested window.load here because we're already inside a load handler)
+function bindQcModalControls() {
+  console.log("QC DEBUG: bindQcModalControls running");
+  const closeBtn = document.getElementById("qc-close");
+  const prevBtn = document.getElementById("qc-prev");
+  const nextBtn = document.getElementById("qc-next");
+  const modal = document.getElementById("qc-modal");
+  const imgEl = document.getElementById("qc-modal-img");
+
+  console.log("QC DEBUG: elements found?", {
+    closeBtn: !!closeBtn,
+    prevBtn: !!prevBtn,
+    nextBtn: !!nextBtn,
+    modal: !!modal,
+    imgEl: !!imgEl
+  });
+
+  if (closeBtn) closeBtn.onclick = () => { console.log("QC DEBUG: qc-close clicked"); closeQC(); };
+  if (prevBtn) prevBtn.onclick = () => { console.log("QC DEBUG: qc-prev clicked"); prevQC(); };
+  if (nextBtn) nextBtn.onclick = () => { console.log("QC DEBUG: qc-next clicked"); nextQC(); };
+
+  // Debug: log when modal hide/show is toggled
+  if (modal && !modal.__qcDebugWrapped) {
+    modal.__qcDebugWrapped = true;
+    const addOrig = modal.classList.add.bind(modal.classList);
+    const removeOrig = modal.classList.remove.bind(modal.classList);
+    modal.classList.add = (...args) => { console.log("QC DEBUG: modal.classList.add", args); return addOrig(...args); };
+    modal.classList.remove = (...args) => { console.log("QC DEBUG: modal.classList.remove", args); return removeOrig(...args); };
+  }
+}
+
+bindQcModalControls();
 
 // Carousel state
 const carouselPositions = {};
