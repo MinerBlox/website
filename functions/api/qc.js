@@ -1,9 +1,8 @@
 export async function onRequest(context) {
   try {
     const url = new URL(context.request.url);
-
     const goodsId = url.searchParams.get("goodsId");
-    const platform = (url.searchParams.get("platform") || "WD").toUpperCase();
+    const platform = url.searchParams.get("platform"); // OPTIONAL
 
     if (!goodsId) {
       return new Response(JSON.stringify({ error: "missing goodsId" }), {
@@ -12,31 +11,15 @@ export async function onRequest(context) {
       });
     }
 
-    // Map platform → AcBuy prefix
-    let prefix;
-    switch (platform) {
-      case "WD":
-      case "WEIDIAN":
-        prefix = "WD";
-        break;
+    // DEFAULT behavior (Weidian) — unchanged
+    let acGoodsId = "WD" + goodsId;
 
-      case "TB":
-      case "TAOBAO":
-        prefix = "TB";
-        break;
-
-      default:
-        return new Response(JSON.stringify({
-          error: "unsupported platform",
-          platform
-        }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" }
-        });
+    // ONLY switch if explicitly Taobao
+    if (platform && platform.toUpperCase() === "TB") {
+      acGoodsId = "TB" + goodsId;
     }
 
-    const acGoodsId = prefix + goodsId;
-
+    // SAME QC endpoint
     const api = `https://www.acbuy.com/prefix-api/store-product/product/api/item/Photos?goodsId=${acGoodsId}`;
 
     const r = await fetch(api, {
@@ -47,11 +30,11 @@ export async function onRequest(context) {
       }
     });
 
-    const text = await r.text();
+    const text = await r.text();   // read raw body first
 
     let data;
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(text);     // parse JSON safely
     } catch {
       return new Response(JSON.stringify({
         error: "Invalid JSON from AcBuy",
@@ -62,11 +45,7 @@ export async function onRequest(context) {
       });
     }
 
-    return new Response(JSON.stringify({
-      platform: prefix,
-      goodsId: acGoodsId,
-      data
-    }), {
+    return new Response(JSON.stringify(data), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
